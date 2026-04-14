@@ -33,6 +33,12 @@ class DataIngestor:
             len(df.columns),
             getattr(path, "name", path),
         )
+        return self.process_dataframe(df)
+
+    def process_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Apply column normalisation, dtype coercion, and observation tagging to
+        an already-loaded dataframe (e.g. one returned by the CMS SODA API client).
+        """
         df = self._normalize_columns(df)
         df = self._coerce_dtypes(df)
         df = self._add_raw_observations(df)
