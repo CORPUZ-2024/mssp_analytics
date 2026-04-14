@@ -15,6 +15,7 @@ REQUIRED_COLUMNS: Final[tuple[str, ...]] = (
 
 NUMERIC_COLUMNS: Final[tuple[str, ...]] = (
     "avg_risk_score",
+    "avg_demog_score",
     "per_capita_exp",
     "person_years",
     "total_beneficiaries",
@@ -33,12 +34,15 @@ STRING_COLUMNS: Final[tuple[str, ...]] = (
     "data_cut",
 )
 
-# Dedup key: year + SSA county identifier pair. STATE_NAME / COUNTY_NAME
-# are excluded — whitespace/case variation causes missed duplicates.
+# Dedup key: year + SSA county identifier + enrollment type.
+# STATE_NAME / COUNTY_NAME excluded — whitespace/case variation causes
+# missed duplicates. enrollment_type included because the CMS Data API v1
+# returns one row per county/enrollment-type combination after reshape.
 DEDUP_SUBSET: Final[tuple[str, ...]] = (
     "year",
     "state_id",
     "county_id",
+    "enrollment_type",
     "dataset_id",
 )
 
