@@ -32,27 +32,19 @@ from src.modules.fhir_data_bridge.mapping_report import (
 )
 from src.modules.fhir_data_bridge.puf_to_fhir_mapper import map_puf_row_to_fhir
 
-# MSSP PUF available performance years via CMS Data API v1.
-# The current dataset (5f9f1216-…) publishes benchmark data starting with
-# performance year 2024.  Update _LAST_YEAR as CMS releases new vintages.
-_FIRST_YEAR = 2024
-_LAST_YEAR  = 2024
-_ALL_YEARS  = list(range(_FIRST_YEAR, _LAST_YEAR + 1))
-
-
 # ---------------------------------------------------------------------------
-# Data fetching — cached by year range so filters don't re-trigger the API
+# Data fetching — cached for 1 hour; always loads the current 2024 PUF
 # ---------------------------------------------------------------------------
 
 @_cache_data(show_spinner=False, ttl=3_600)
-def fetch_puf_data(start_year: int, end_year: int) -> pd.DataFrame:
-    """Fetch CMS MSSP PUF from the SODA API for the given year range,
+def fetch_puf_data() -> pd.DataFrame:
+    """Fetch the 2024 CMS MSSP PUF from the CMS Data API v1,
     normalise columns, coerce dtypes, and enrich with pilot-program flags."""
     client   = CMSSodaClient()
     ingestor = DataIngestor()
     enricher = DataEnricher()
 
-    raw = client.fetch_to_dataframe(start_year=start_year, end_year=end_year)
+    raw = client.fetch_to_dataframe()
 
     if raw.empty:
         return raw
@@ -71,16 +63,16 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
         return sorted(df[col].dropna().unique().tolist()) if col in df.columns else []
 
     selected_enrollment = st.sidebar.selectbox("Enrollment type", ["All"] + _opts("enrollment_type"))
-    selected_data_cut   = st.sidebar.selectbox("Data cut",        ["All"] + _opts("data_cut"))
     selected_state      = st.sidebar.selectbox("State",           ["All"] + _opts("state_name"))
+    selected_county     = st.sidebar.selectbox("County",          ["All"] + _opts("county_name"))
 
     out = df.copy()
     if selected_enrollment != "All":
         out = out[out["enrollment_type"] == selected_enrollment]
-    if selected_data_cut != "All":
-        out = out[out["data_cut"] == selected_data_cut]
     if selected_state != "All":
         out = out[out["state_name"] == selected_state]
+    if selected_county != "All":
+        out = out[out["county_name"] == selected_county]
     return out
 
 
@@ -351,59 +343,30 @@ def main() -> None:
     st.set_page_config(page_title="MSSP County-Level Analytics", layout="wide")
     st.title("MSSP County-Level Analytics Dashboard")
     st.caption(
-        "Data: CMS MSSP County-Level Aggregate Expenditure & Risk Score PUF — "
+        "Performance Year 2024 · CMS MSSP County-Level Aggregate Expenditure & Risk Score PUF — "
         "[data.cms.gov](https://data.cms.gov/medicare-shared-savings-program/"
         "county-level-aggregate-expenditure-and-risk-score-data-on-assignable-beneficiaries)"
     )
 
     # ------------------------------------------------------------------
-    # Sidebar — year range selection
+    # Auto-load 2024 PUF data on startup — no user input required
     # ------------------------------------------------------------------
-    with st.sidebar:
-        st.header("Performance Year Range")
-        start_year = st.selectbox("Start year", _ALL_YEARS, index=_ALL_YEARS.index(2022))
-        end_year   = st.selectbox("End year",   _ALL_YEARS, index=_ALL_YEARS.index(_LAST_YEAR))
+    if "puf_df" not in st.session_state:
+        with st.spinner("Loading 2024 MSSP PUF data from CMS API…"):
+            try:
+                st.session_state["puf_df"] = fetch_puf_data()
+            except Exception as exc:
+                st.error(f"CMS API fetch failed: {exc}")
+                st.stop()
 
-        if start_year > end_year:
-            st.error("Start year must be ≤ end year.")
-            st.stop()
-
-        if _V(st.__version__) >= _V("1.14"):
-            load = st.button("Load Data", type="primary", use_container_width=True)
-        else:
-            load = st.button("Load Data")
-        st.markdown("---")
-
-    # ------------------------------------------------------------------
-    # Fetch data on button press (or if already cached)
-    # ------------------------------------------------------------------
-    cache_key = (start_year, end_year)
-
-    if load or "puf_df" in st.session_state:
-        if load or st.session_state.get("loaded_range") != cache_key:
-            with st.spinner(f"Fetching PUF data for {start_year}–{end_year} from CMS SODA API…"):
-                try:
-                    df = fetch_puf_data(start_year, end_year)
-                    st.session_state["puf_df"]      = df
-                    st.session_state["loaded_range"] = cache_key
-                except Exception as exc:
-                    st.error(f"API fetch failed: {exc}")
-                    st.stop()
-        else:
-            df = st.session_state["puf_df"]
-    else:
-        st.info(
-            "Select a performance year range and click **Load Data** to begin.\n\n"
-            "Data is fetched directly from the CMS SODA API — no file upload needed."
-        )
-        st.stop()
+    df = st.session_state["puf_df"]
 
     if df.empty:
-        st.warning(f"No records returned for {start_year}–{end_year}. Try a different year range.")
+        st.warning("No records returned from the CMS API. Please try again later.")
         st.stop()
 
     # ------------------------------------------------------------------
-    # Sidebar — filters (shown after data loads)
+    # Sidebar — filters only (no data-input controls needed)
     # ------------------------------------------------------------------
     with st.sidebar:
         st.header("Filters")
@@ -411,6 +374,17 @@ def main() -> None:
         st.markdown("---")
         st.metric("Records loaded", f"{len(df):,}")
         st.metric("After filters",  f"{len(working_df):,}")
+        st.markdown("---")
+        if st.button("Refresh data"):
+            st.session_state.pop("puf_df", None)
+            try:
+                fetch_puf_data.clear()          # st.cache_data (>=1.18)
+            except AttributeError:
+                pass                            # st.experimental_memo has no .clear()
+            if _V(st.__version__) >= _V("1.27"):
+                st.rerun()
+            else:
+                st.experimental_rerun()         # type: ignore[attr-defined]
 
     # ------------------------------------------------------------------
     # Tabs
