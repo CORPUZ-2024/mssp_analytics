@@ -88,59 +88,81 @@ def render_hcc_tab(df: pd.DataFrame) -> None:
         "exposure patterns."
     )
 
-    max_yoy = float(
-        df["risk_score_yoy_delta"].abs().max()
-        if "risk_score_yoy_delta" in df.columns and df["risk_score_yoy_delta"].notna().any()
-        else 1.0
-    ) or 1.0
-    max_eer = float(
-        df["expenditure_efficiency_ratio"].max()
-        if "expenditure_efficiency_ratio" in df.columns and df["expenditure_efficiency_ratio"].notna().any()
-        else 1.0
-    ) or 1.0
-
-    col1, col2 = st.columns(2)
-    with col1:
-        delta_threshold = st.slider("Min risk score YoY delta", 0.0, max_yoy, 0.0, max_yoy / 100)
-    with col2:
-        eer_threshold = st.slider("Min expenditure efficiency ratio", 0.0, max_eer, 0.0, max_eer / 100)
-
     summary = build_hcc_risk_flag_summary(df)
     if summary.empty:
         st.warning("Not enough data to compute HCC risk flags.")
         return
 
+    # Detect whether true YoY delta is available (requires ≥2 years of data).
+    # With a single performance year the shift(1) produces all-NaN deltas,
+    # so we fall back to the absolute risk score as the x-axis.
+    has_yoy = (
+        "risk_score_yoy_delta" in summary.columns
+        and summary["risk_score_yoy_delta"].notna().any()
+    )
+
+    max_eer = float(
+        summary["expenditure_efficiency_ratio"].max()
+        if "expenditure_efficiency_ratio" in summary.columns
+        and summary["expenditure_efficiency_ratio"].notna().any()
+        else 1.0
+    ) or 1.0
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if has_yoy:
+            max_yoy = float(summary["risk_score_yoy_delta"].abs().max()) or 1.0
+            delta_threshold = st.slider("Min YoY risk score delta", 0.0, max_yoy, 0.0, max_yoy / 100)
+        else:
+            max_rs = float(summary["avg_risk_score"].max()) if "avg_risk_score" in summary.columns else 2.0
+            rs_threshold = st.slider("Min risk score", 0.0, max_rs, 0.0, max_rs / 100)
+    with col2:
+        eer_threshold = st.slider("Min expenditure efficiency ratio", 0.0, max_eer, 0.0, max_eer / 100)
+
     filtered = summary.copy()
-    if "risk_score_yoy_delta" in filtered.columns:
+    if has_yoy:
         filtered = filtered[filtered["risk_score_yoy_delta"].fillna(0) >= delta_threshold]
+    else:
+        if "avg_risk_score" in filtered.columns:
+            filtered = filtered[filtered["avg_risk_score"].fillna(0) >= rs_threshold]
     if "expenditure_efficiency_ratio" in filtered.columns:
         filtered = filtered[filtered["expenditure_efficiency_ratio"].fillna(0) >= eer_threshold]
 
     st.subheader(f"Top RADV Exposure Counties ({len(filtered)} records)")
-    st.dataframe(filtered.head(25), use_container_width=True)
+    st.dataframe(filtered.head(25), height=400)
 
-    if (
-        "risk_score_yoy_delta" in filtered.columns
-        and "expenditure_efficiency_ratio" in filtered.columns
-        and not filtered.empty
-    ):
-        st.subheader("Risk Score Growth vs. Expenditure Efficiency")
+    if "expenditure_efficiency_ratio" in filtered.columns and not filtered.empty:
+        if has_yoy:
+            x_col, x_label = "risk_score_yoy_delta", "YoY Risk Score Delta"
+        else:
+            # Single year: no prior year to diff — use absolute risk score and note why.
+            x_col, x_label = "avg_risk_score", "Risk Score (2024)"
+            st.caption(
+                "ℹ️ YoY delta requires at least two years of data. "
+                "Showing absolute 2024 risk score vs. expenditure efficiency."
+            )
+
+        st.subheader("Risk Score vs. Expenditure Efficiency — RADV Exposure Map")
         fig = px.scatter(
-            filtered,
-            x="risk_score_yoy_delta",
+            filtered.dropna(subset=[x_col, "expenditure_efficiency_ratio"]),
+            x=x_col,
             y="expenditure_efficiency_ratio",
             color="radv_exposure_flag",
-            color_discrete_map={True: "#d62728", False: "#1f77b4"},
+            color_discrete_map={True: "#e8180c", False: "#1a6faf"},
             size="hcc_concentration_index" if "hcc_concentration_index" in filtered.columns else None,
-            size_max=14,
+            size_max=18,
+            opacity=0.85,
             hover_data=["state_id", "county_id", "enrollment_type"],
-            title="RADV Exposure Proxy: YoY Risk Score Delta vs. Expenditure Efficiency",
+            title="RADV Exposure Proxy: Risk Score vs. Expenditure Efficiency",
             labels={
-                "risk_score_yoy_delta":        "YoY Risk Score Delta",
+                x_col:                         x_label,
                 "expenditure_efficiency_ratio": "Expenditure Efficiency Ratio ($/RAF)",
                 "radv_exposure_flag":           "High RADV Exposure",
             },
+            height=450,
         )
+        fig.update_traces(marker_line_width=0.5, marker_line_color="white")
+        fig.update_layout(legend_title_text="High RADV Exposure")
         st.plotly_chart(fig, use_container_width=True)
 
     st.info(
@@ -187,7 +209,7 @@ def render_shared_savings_tab(df: pd.DataFrame) -> None:
     st.subheader("Shared Savings Summary")
     st.dataframe(
         reconciliation[display_cols].sort_values("shared_savings_ratio", ascending=False).head(25),
-        use_container_width=True,
+        height=400,
     )
 
     if "shared_savings_ratio" in reconciliation.columns:
@@ -197,17 +219,22 @@ def render_shared_savings_tab(df: pd.DataFrame) -> None:
             color="shared_savings_status",
             nbins=30,
             barmode="stack",
+            opacity=0.88,
             title=f"Shared Savings Ratio Distribution — Track {track_type.upper()}",
             labels={"shared_savings_ratio": "Shared Savings Ratio", "shared_savings_status": "Status"},
             color_discrete_map={
-                "qualified_savings": "#2ca02c",
-                "savings_below_msr": "#98df8a",
-                "break_even":        "#aec7e8",
-                "loss_not_shared":   "#d62728",
-                "shared_loss":       "#9467bd",
+                "qualified_savings": "#1b7e24",
+                "savings_below_msr": "#57b85a",
+                "break_even":        "#5b9bd5",
+                "loss_not_shared":   "#c0392b",
+                "shared_loss":       "#7b3fa0",
+                "unknown":           "#707070",
             },
+            height=450,
         )
-        fig.add_vline(x=0, line_dash="dash", line_color="black")
+        fig.add_vline(x=0, line_dash="dash", line_color="white", line_width=1.5,
+                      annotation_text="Break-even", annotation_position="top left")
+        fig.update_layout(bargap=0.05, legend_title_text="Savings Status")
         st.plotly_chart(fig, use_container_width=True)
 
     col_a, col_b = st.columns(2)
@@ -257,7 +284,7 @@ def render_pa_metrics_tab(df: pd.DataFrame) -> None:
         ] if c in report.columns
     ]
     st.subheader("Simulated PA Metrics — Top 25 Counties")
-    st.dataframe(report[display_cols].head(25), use_container_width=True)
+    st.dataframe(report[display_cols].head(25), height=400)
 
     if "denied_rate" in report.columns and "enrollment_type" in report.columns:
         fig = px.histogram(
@@ -266,12 +293,20 @@ def render_pa_metrics_tab(df: pd.DataFrame) -> None:
             color="enrollment_type",
             nbins=25,
             barmode="overlay",
-            opacity=0.75,
+            opacity=0.82,
             title="Simulated Denial Rate Distribution by Enrollment Type",
             labels={"denied_rate": "Denial Rate", "enrollment_type": "Enrollment Type"},
+            color_discrete_map={
+                "ESRD":          "#a93226",
+                "Disabled":      "#1f618d",
+                "Aged Dual":     "#1e8449",
+                "Aged Non-Dual": "#d4ac0d",
+            },
+            height=450,
         )
-        fig.add_vline(x=0.077, line_dash="dash", line_color="black",
-                      annotation_text="FFS benchmark (7.7%)", annotation_position="top right")
+        fig.add_vline(x=0.077, line_dash="dash", line_color="white", line_width=1.5,
+                      annotation_text="FFS benchmark 7.7%")
+        fig.update_layout(bargap=0.02, legend_title_text="Enrollment Type")
         st.plotly_chart(fig, use_container_width=True)
 
     st.info(
@@ -306,7 +341,7 @@ def render_fhir_tab(df: pd.DataFrame) -> None:
     st.subheader("PUF-to-FHIR Field Mapping")
     st.dataframe(
         display_table[["puf_field", "fhir_path", "cms_0057f_api", "support_status", "gap", "note"]],
-        use_container_width=True,
+        height=400,
     )
 
     st.subheader("API Coverage by CMS-0057-F API")
@@ -318,10 +353,17 @@ def render_fhir_tab(df: pd.DataFrame) -> None:
             y="field_count",
             color="support_status",
             barmode="stack",
+            opacity=0.88,
             title="MSSP PUF Field Coverage per CMS-0057-F API",
             labels={"cms_0057f_api": "CMS API", "field_count": "PUF fields", "support_status": "FHIR Support"},
-            color_discrete_map={"Yes": "#2ca02c", "Partial": "#ff7f0e", "No mapping": "#d62728"},
+            color_discrete_map={
+                "Yes":        "#1a7a2e",
+                "Partial":    "#c97a0a",
+                "No mapping": "#b03020",
+            },
+            height=400,
         )
+        fig.update_layout(bargap=0.25, legend_title_text="FHIR Support")
         st.plotly_chart(fig, use_container_width=True)
 
     if not df.empty:
