@@ -10,6 +10,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from packaging.version import Version as _V
+
+# Streamlit 1.18+ uses st.cache_data; 1.12 (Python 3.9.7 local) uses
+# st.experimental_memo.  Both share the same signature for ttl/show_spinner.
+if _V(st.__version__) >= _V("1.18"):
+    _cache_data = st.cache_data
+else:
+    _cache_data = st.experimental_memo  # type: ignore[attr-defined]
 
 from src.etl.client import CMSSodaClient
 from src.etl.enrich import DataEnricher
@@ -36,7 +44,7 @@ _ALL_YEARS  = list(range(_FIRST_YEAR, _LAST_YEAR + 1))
 # Data fetching — cached by year range so filters don't re-trigger the API
 # ---------------------------------------------------------------------------
 
-@st.experimental_memo(show_spinner=False, ttl=3_600)
+@_cache_data(show_spinner=False, ttl=3_600)
 def fetch_puf_data(start_year: int, end_year: int) -> pd.DataFrame:
     """Fetch CMS MSSP PUF from the SODA API for the given year range,
     normalise columns, coerce dtypes, and enrich with pilot-program flags."""
@@ -360,7 +368,10 @@ def main() -> None:
             st.error("Start year must be ≤ end year.")
             st.stop()
 
-        load = st.button("Load Data")
+        if _V(st.__version__) >= _V("1.14"):
+            load = st.button("Load Data", type="primary", use_container_width=True)
+        else:
+            load = st.button("Load Data")
         st.markdown("---")
 
     # ------------------------------------------------------------------
