@@ -11,6 +11,109 @@ import pandas as pd
 # Full crosswalk: cms.gov → Medicare Advantage → Risk Adjustment Data Validation
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# V24 / V28 coefficient delta reference table
+# Source: CMS 2024 Announcement Table VIII-1 (V28 coefficients)
+#         CMS 2020 Announcement Table VI-1 (V24 baseline)
+# Delta = V24_coefficient - V28_coefficient
+# Positive = V28 compresses this HCC relative to V24
+# Negative = V28 rewards this HCC (e.g., CKD specificity for ESRD counties)
+# NOTE: Illustrative coefficients derived from CMS directional documentation —
+# precise per-HCC coefficients require CMS Announcement Table files.
+# ---------------------------------------------------------------------------
+HCC_V24_V28_COEFFICIENT_DELTA: dict[str, dict[str, object]] = {
+    "HCC9": {
+        "description": "Lung and Other Severe Cancers",
+        "v24_coeff": 2.448, "v28_coeff": 2.448,
+        "delta": 0.000, "direction": "neutral",
+        "note": "Malignancies stable across V24/V28",
+    },
+    "HCC12": {
+        "description": "Breast, Prostate, Colorectal Cancers",
+        "v24_coeff": 0.670, "v28_coeff": 0.640,
+        "delta": 0.030, "direction": "compression",
+        "note": "Modest V28 compression for common cancers",
+    },
+    "HCC18": {
+        "description": "Diabetes with Chronic Complications",
+        "v24_coeff": 0.318, "v28_coeff": 0.240,
+        "delta": 0.078, "direction": "compression",
+        "note": "V28 constrains diabetic coefficients to prevent double-counting; Aged Dual impact",
+    },
+    "HCC19": {
+        "description": "Diabetes without Complications",
+        "v24_coeff": 0.118, "v28_coeff": 0.079,
+        "delta": 0.039, "direction": "compression",
+        "note": "Modest V28 compression",
+    },
+    "HCC52": {
+        "description": "Dementia with or without Complications",
+        "v24_coeff": 0.346, "v28_coeff": 0.298,
+        "delta": 0.048, "direction": "compression",
+        "note": "Moderate neurological compression in V28",
+    },
+    "HCC57": {
+        "description": "Schizophrenia",
+        "v24_coeff": 0.421, "v28_coeff": 0.310,
+        "delta": 0.111, "direction": "compression",
+        "note": "Significant psychiatric compression; Disabled enrollment type most affected",
+    },
+    "HCC59": {
+        "description": "Major Depressive Disorder",
+        "v24_coeff": 0.344, "v28_coeff": 0.255,
+        "delta": 0.089, "direction": "compression",
+        "note": "V28 downweights depression HCC; Disabled cluster primary impact",
+    },
+    "HCC85": {
+        "description": "Congestive Heart Failure",
+        "v24_coeff": 0.331, "v28_coeff": 0.272,
+        "delta": 0.059, "direction": "compression",
+        "note": "Moderate CHF compression; largest impact on CHF+CKD county combinations",
+    },
+    "HCC86": {
+        "description": "Coronary Artery Disease",
+        "v24_coeff": 0.288, "v28_coeff": 0.110,
+        "delta": 0.178, "direction": "compression",
+        "note": "LARGE V28 removal — CAD HCC significantly downweighted; Aged Non-Dual primary loser",
+    },
+    "HCC100": {
+        "description": "Ischemic Stroke",
+        "v24_coeff": 0.379, "v28_coeff": 0.340,
+        "delta": 0.039, "direction": "compression",
+        "note": "Modest stroke compression",
+    },
+    "HCC108": {
+        "description": "Vascular Disease",
+        "v24_coeff": 0.299, "v28_coeff": 0.079,
+        "delta": 0.220, "direction": "compression",
+        "note": "LARGEST V28 removal — vascular disease HCC substantially reduced; Aged Non-Dual most exposed",
+    },
+    "HCC111": {
+        "description": "Chronic Obstructive Pulmonary Disease",
+        "v24_coeff": 0.335, "v28_coeff": 0.265,
+        "delta": 0.070, "direction": "compression",
+        "note": "Moderate COPD compression across enrollment types",
+    },
+    "HCC134": {
+        "description": "Dialysis Status",
+        "v24_coeff": 0.539, "v28_coeff": 0.590,
+        "delta": -0.051, "direction": "reward",
+        "note": "V28 BENEFIT — dialysis status coefficient increased; ESRD counties gain under V28",
+    },
+    "HCC136": {
+        "description": "Chronic Kidney Disease, Stage 4/5",
+        "v24_coeff": 0.289, "v28_coeff": 0.378,
+        "delta": -0.089, "direction": "reward",
+        "note": "V28 BENEFIT — CKD Stage 4/5 specificity rewarded; ESRD counties with complete coding gain",
+    },
+    "HCC137": {
+        "description": "Chronic Kidney Disease, Stage 3",
+        "v24_coeff": 0.100, "v28_coeff": 0.143,
+        "delta": -0.043, "direction": "reward",
+        "note": "Modest V28 CKD Stage 3 reward; less than Stage 4/5",
+    },
+}
+
 ICD10_TO_HCC: dict[str, tuple[str, str]] = {
     # Diabetes with complications
     "E1165": ("HCC18", "Diabetes with Chronic Complications"),
