@@ -395,21 +395,32 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
             )
         hist_data = summary[x_col].dropna()
         if not hist_data.empty:
+            # Clip x-axis to IQR ± 1.5× fence so the spike near 0 fills the chart
+            q1, q3 = hist_data.quantile(0.05), hist_data.quantile(0.95)
+            iqr     = q3 - q1
+            x_min   = max(hist_data.min(), q1 - iqr)
+            x_max   = min(hist_data.max(), q3 + iqr)
+            plot_df = summary.dropna(subset=[x_col])
             fig = px.histogram(
-                summary.dropna(subset=[x_col]),
-                x=x_col, nbins=40,
+                plot_df,
+                x=x_col, nbins=25,
                 color_discrete_sequence=["#7AAAC4"],
-                height=CHART_H + 40,
+                height=320,
                 labels={x_col: x_label},
+                range_x=[x_min, x_max],
             )
             nat_avg = float(hist_data.mean())
             fig.add_vline(
                 x=nat_avg, line_dash="dash", line_color="rgba(180,100,60,0.7)",
-                annotation_text=f"Natl avg {nat_avg:.3f}",
+                annotation_text=f"Natl avg {nat_avg:+.1%}",
                 annotation_font_size=9,
                 annotation_position="top right",
             )
             _apply_layout(fig, showlegend=False)
+            st.caption(
+                f"n={len(hist_data):,} counties · showing 5th–95th pct range "
+                f"[{x_min:+.1%}, {x_max:+.1%}] · outliers clipped for readability"
+            )
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         else:
             st.caption("No data available.")
@@ -967,7 +978,13 @@ def main() -> None:
     if "hcc_df" not in st.session_state:
         with st.spinner("Loading PY2023 + PY2024 MSSP PUF data for Module A YoY delta…"):
             try:
-                st.session_state["hcc_df"] = fetch_hcc_multi_year_data()
+                hcc = fetch_hcc_multi_year_data()
+                # Validate that multi-year fetch actually returned both years
+                if "year" in hcc.columns and hcc["year"].nunique() < 2:
+                    # Cache is stale — force re-fetch with both years
+                    fetch_hcc_multi_year_data.clear()
+                    hcc = fetch_hcc_multi_year_data()
+                st.session_state["hcc_df"] = hcc
             except Exception as exc:
                 st.warning(f"Could not load 2023 data for YoY delta: {exc}. Falling back to 2024 only.")
                 st.session_state["hcc_df"] = st.session_state.get("puf_df", pd.DataFrame())
