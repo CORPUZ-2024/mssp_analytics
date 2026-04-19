@@ -43,7 +43,8 @@ st.set_page_config(page_title="CMS MSSP County-Level Analytics", layout="wide")
 st.markdown(
     """
     <style>
-    .block-container { padding-top: 1rem !important; }
+    /* Push content below Streamlit's fixed top bar */
+    .block-container { padding-top: 3.5rem !important; }
 
     .insight-bar {
         border-left: 3px solid #534AB7;
@@ -945,10 +946,13 @@ def main() -> None:
     # by using query params or session state workaround; simplest approach:
     # render sidebar tied to tab1 by default, user sees full controls.
     # Tab-aware sidebar is approximated via selectbox in sidebar.
+    st.sidebar.markdown(
+        '<div style="font-size:10px;opacity:0.5;margin-bottom:2px">Sidebar filters for</div>',
+        unsafe_allow_html=True,
+    )
     active_tab_sel = st.sidebar.selectbox(
         "Sidebar filters for",
         ["Module A — HCC risk flags", "Module B — Shared savings", "Module C — PA metrics"],
-        label_visibility="collapsed",
     )
     tab_key = {"Module A — HCC risk flags": "hcc", "Module B — Shared savings": "savings",
                "Module C — PA metrics": "pa"}.get(active_tab_sel, "hcc")
