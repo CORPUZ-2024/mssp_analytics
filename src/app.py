@@ -151,15 +151,45 @@ def _risk_label(score: float, high_q: float, med_q: float) -> str:
 
 @_cache_data(show_spinner=False, ttl=3_600)
 def fetch_puf_data() -> pd.DataFrame:
+    """Fetch the most recent full year (2024) for Modules B and C."""
     client   = CMSSodaClient()
     ingestor = DataIngestor()
     enricher = DataEnricher()
-    raw = client.fetch_to_dataframe()
+    raw = client.fetch_to_dataframe(start_year=2024, end_year=2024)
     if raw.empty:
         return raw
     df = ingestor.process_dataframe(raw)
     df = enricher.enrich(df)
     return df
+
+
+@_cache_data(show_spinner=False, ttl=3_600)
+def fetch_hcc_multi_year_data() -> pd.DataFrame:
+    """Fetch 2023 + 2024 data for Module A — required for YoY delta calculation."""
+    client   = CMSSodaClient()
+    ingestor = DataIngestor()
+    enricher = DataEnricher()
+    raw = client.fetch_to_dataframe(start_year=2023, end_year=2024)
+    if raw.empty:
+        return raw
+    df = ingestor.process_dataframe(raw)
+    df = enricher.enrich(df)
+    return df
+
+
+def _state_name_opts(df: pd.DataFrame) -> list[str]:
+    """Return sorted, title-cased state names from the state_name column."""
+    if "state_name" not in df.columns:
+        return []
+    names = (
+        df["state_name"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .str.title()
+        .unique()
+    )
+    return sorted(n for n in names if n and n.lower() != "nan")
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +209,7 @@ def render_sidebar(df: pd.DataFrame, active_tab: str) -> dict:
 
         # ---- Module A filters ---
         if active_tab == "hcc":
-            state_opts = ["All states"] + _opts("state_id")
+            state_opts = ["All states"] + _state_name_opts(df)
             filters["state"] = st.selectbox("State", state_opts)
 
             enroll_opts = ["All types"] + _opts("enrollment_type")
@@ -221,7 +251,7 @@ def render_sidebar(df: pd.DataFrame, active_tab: str) -> dict:
                         "Neurology", "Behavioral", "Post-acute", "DME"]
             filters["service_type"] = st.selectbox("Service type", svc_opts)
 
-            state_opts = ["All states"] + _opts("state_id")
+            state_opts = ["All states"] + _state_name_opts(df)
             filters["state"] = st.selectbox("State", state_opts)
 
             data_cut_opts = ["Final", "OC3", "OC1"]
@@ -237,8 +267,10 @@ def render_sidebar(df: pd.DataFrame, active_tab: str) -> dict:
         st.markdown("---")
         if st.button("Refresh data"):
             st.session_state.pop("puf_df", None)
+            st.session_state.pop("hcc_df", None)
             try:
                 fetch_puf_data.clear()
+                fetch_hcc_multi_year_data.clear()
             except AttributeError:
                 pass
             if _V(st.__version__) >= _V("1.27"):
@@ -928,7 +960,16 @@ def main() -> None:
                 st.error(f"CMS API fetch failed: {exc}")
                 st.stop()
 
-    df = st.session_state["puf_df"]
+    if "hcc_df" not in st.session_state:
+        with st.spinner("Loading 2023–2024 MSSP PUF data for Module A (YoY delta)…"):
+            try:
+                st.session_state["hcc_df"] = fetch_hcc_multi_year_data()
+            except Exception as exc:
+                st.warning(f"Could not load 2023 data for YoY delta: {exc}. Falling back to 2024 only.")
+                st.session_state["hcc_df"] = st.session_state.get("puf_df", pd.DataFrame())
+
+    df     = st.session_state["puf_df"]    # 2024 only — Modules B + C
+    hcc_df = st.session_state["hcc_df"]   # 2023+2024 — Module A
 
     if df.empty:
         st.warning("No records returned from the CMS API. Please try again later.")
@@ -957,18 +998,25 @@ def main() -> None:
     tab_key = {"Module A — HCC risk flags": "hcc", "Module B — Shared savings": "savings",
                "Module C — PA metrics": "pa"}.get(active_tab_sel, "hcc")
 
-    filters = render_sidebar(df, tab_key)
+    # Sidebar uses hcc_df for state name options (has 2023+2024 coverage)
+    filters = render_sidebar(hcc_df if tab_key == "hcc" else df, tab_key)
 
-    # Apply common filters to working_df
-    working_df = df.copy()
-    if "state" in filters and filters["state"] != "All states" and "state_id" in working_df.columns:
-        working_df = working_df[working_df["state_id"] == filters["state"]]
-    if "enrollment_type" in filters and filters["enrollment_type"] != "All types":
-        if "enrollment_type" in working_df.columns:
-            working_df = working_df[working_df["enrollment_type"] == filters["enrollment_type"]]
+    def _apply_filters(src: pd.DataFrame) -> pd.DataFrame:
+        out = src.copy()
+        sel_state = filters.get("state", "All states")
+        if sel_state != "All states" and "state_name" in out.columns:
+            out = out[out["state_name"].str.strip().str.title() == sel_state]
+        sel_enroll = filters.get("enrollment_type", "All types")
+        if sel_enroll != "All types" and "enrollment_type" in out.columns:
+            out = out[out["enrollment_type"] == sel_enroll]
+        return out
+
+    # Module A uses 2023+2024 data; Modules B+C use 2024 only
+    hcc_working = _apply_filters(hcc_df)
+    working_df  = _apply_filters(df)
 
     with tab1:
-        render_hcc_tab(working_df, filters)
+        render_hcc_tab(hcc_working, filters)
     with tab2:
         render_shared_savings_tab(working_df, filters)
     with tab3:
