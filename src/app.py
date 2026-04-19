@@ -16,7 +16,7 @@ if _V(st.__version__) >= _V("1.18"):
 else:
     _cache_data = st.experimental_memo  # type: ignore[attr-defined]
 
-from src.etl.client import CMSSodaClient
+from src.etl.client import CMSSodaClient, DATASET_IDS_BY_YEAR
 from src.etl.enrich import DataEnricher
 from src.etl.ingest import DataIngestor
 from src.modules.hcc_radv_risk_flags.hcc_risk_report import build_hcc_risk_flag_summary
@@ -165,14 +165,31 @@ def fetch_puf_data() -> pd.DataFrame:
 
 @_cache_data(show_spinner=False, ttl=3_600)
 def fetch_hcc_multi_year_data() -> pd.DataFrame:
-    """Fetch 2023 + 2024 data for Module A — required for YoY delta calculation."""
-    client   = CMSSodaClient()
+    """Fetch 2023 + 2024 data for Module A — required for YoY delta calculation.
+
+    Each performance year is a separate CMS dataset ID.  The single-dataset
+    fetch_to_dataframe() only returns one year; we union year-specific fetches here.
+    Dataset IDs discovered from https://data.cms.gov/data.json catalog.
+    """
     ingestor = DataIngestor()
     enricher = DataEnricher()
-    raw = client.fetch_to_dataframe(start_year=2023, end_year=2024)
-    if raw.empty:
-        return raw
-    df = ingestor.process_dataframe(raw)
+
+    frames: list[pd.DataFrame] = []
+    for year in (2023, 2024):
+        dataset_id = DATASET_IDS_BY_YEAR.get(year)
+        if not dataset_id:
+            continue
+        client = CMSSodaClient(dataset_id=dataset_id)
+        raw = client.fetch_to_dataframe()
+        if raw.empty:
+            continue
+        frames.append(raw)
+
+    if not frames:
+        return pd.DataFrame()
+
+    combined = pd.concat(frames, ignore_index=True)
+    df = ingestor.process_dataframe(combined)
     df = enricher.enrich(df)
     return df
 
@@ -350,8 +367,8 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
 
     if not has_yoy:
         st.info(
-            "Year-over-year delta requires at least two performance years. "
-            "Showing absolute risk score — load a multi-year dataset to enable delta analysis."
+            "Year-over-year delta unavailable for the current filter selection. "
+            "Showing absolute 2024 risk score — try removing state/enrollment filters."
         )
 
     delta_threshold = filters.get("delta_threshold", 0.0)
@@ -948,7 +965,7 @@ def main() -> None:
                 st.stop()
 
     if "hcc_df" not in st.session_state:
-        with st.spinner("Loading 2023–2024 MSSP PUF data for Module A (YoY delta)…"):
+        with st.spinner("Loading PY2023 + PY2024 MSSP PUF data for Module A YoY delta…"):
             try:
                 st.session_state["hcc_df"] = fetch_hcc_multi_year_data()
             except Exception as exc:

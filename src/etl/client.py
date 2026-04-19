@@ -12,7 +12,18 @@ logger = logging.getLogger(__name__)
 # New CMS Data API v1 (replaces retired Socrata endpoint 7c34-eaqd)
 # https://data.cms.gov/medicare-shared-savings-program/
 #   county-level-aggregate-expenditure-and-risk-score-data-on-assignable-beneficiaries
-DEFAULT_DATASET_ID = "5f9f1216-6fd9-455d-bfbc-0efade687a4e"
+#
+# Year-specific dataset IDs (Cal Year, 2024–2026 Starters cohort).
+# Discovered via https://data.cms.gov/data.json catalog (2025-04-18).
+# The default portal entry (5f9f1216…) exposes the current PY2024 data;
+# prior years require separate dataset IDs.
+DATASET_IDS_BY_YEAR: dict[int, str] = {
+    2024: "5f9f1216-6fd9-455d-bfbc-0efade687a4e",   # portal default (PY2024 Cal Year)
+    2023: "ebd74cd0-1b92-4406-b8b6-8fa13c57a218",   # PY2023 Cal Year, 2024–2026 Starters
+    2022: "ea87ac44-6dcf-48ad-8c59-210d6799fad0",   # PY2022 Cal Year, 2024–2026 Starters
+}
+
+DEFAULT_DATASET_ID = DATASET_IDS_BY_YEAR[2024]
 _API_BASE = "https://data.cms.gov/data-api/v1/dataset"
 _DEFAULT_PAGE_SIZE = 1_000
 _REQUEST_TIMEOUT = 60
