@@ -53,7 +53,7 @@ st.markdown(
         border-radius: 0 8px 8px 0;
         margin-top: 10px;
     }
-    .insight-bar.green  { border-left-color: #1D9E75; background: rgba(29,158,117,0.06); }
+    .insight-bar.green  { border-left-color: #2D7A5C; background: rgba(29,158,117,0.06); }
     .insight-bar.amber  { border-left-color: #BA7517; background: rgba(186,117,23,0.06); }
     .insight-bar.red    { border-left-color: #D85A30; background: rgba(216,90,48,0.06); }
     .insight-bar .ib-label {
@@ -367,16 +367,30 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("**Risk score YoY delta distribution**")
-        st.caption("Counties above threshold flagged as RADV audit risk indicators · source: derived")
+        hist_title = "Risk score YoY delta distribution" if has_yoy else "Risk score distribution (2024)"
+        st.markdown(f"**{hist_title}**")
+        if has_yoy:
+            st.caption("Counties above threshold flagged as RADV audit risk indicators · source: derived")
+        else:
+            st.caption(
+                "2024 performance year · CMS MSSP PUF dataset contains 2024 data only — "
+                "YoY delta unavailable · source: derived"
+            )
         hist_data = summary[x_col].dropna()
         if not hist_data.empty:
             fig = px.histogram(
                 summary.dropna(subset=[x_col]),
-                x=x_col, nbins=20,
-                color_discrete_sequence=["#B5D4F4"],
-                height=CHART_H,
+                x=x_col, nbins=40,
+                color_discrete_sequence=["#7AAAC4"],
+                height=CHART_H + 40,
                 labels={x_col: x_label},
+            )
+            nat_avg = float(hist_data.mean())
+            fig.add_vline(
+                x=nat_avg, line_dash="dash", line_color="rgba(180,100,60,0.7)",
+                annotation_text=f"Natl avg {nat_avg:.3f}",
+                annotation_font_size=9,
+                annotation_position="top right",
             )
             _apply_layout(fig, showlegend=False)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
@@ -398,7 +412,7 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
                     x=scatter_x,
                     y="expenditure_efficiency_ratio",
                     color=color_col,
-                    color_discrete_map={True: "#E24B4A", False: "#5DCAA5"},
+                    color_discrete_map={True: "#B84040", False: "#4E8E75"},
                     opacity=0.75,
                     height=CHART_H,
                     labels={
@@ -509,7 +523,7 @@ def _render_oc_stability_chart(df: pd.DataFrame, summary: pd.DataFrame) -> None:
                 combined, x="data_cut", y="avg_risk_score", color="label",
                 markers=True, height=CHART_H,
                 labels={"data_cut": "Data cut", "avg_risk_score": "avg_risk_score", "label": "County"},
-                color_discrete_sequence=["#E24B4A", "#EF9F27", "#5DCAA5"],
+                color_discrete_sequence=["#B84040", "#C07F20", "#4E8E75"],
             )
             _apply_layout(fig)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
@@ -536,7 +550,7 @@ def _render_oc_stability_mock() -> None:
     fig = px.line(
         mock_data, x="Data cut", y="avg_risk_score", color="County",
         markers=True, height=CHART_H,
-        color_discrete_sequence=["#E24B4A", "#EF9F27", "#5DCAA5"],
+        color_discrete_sequence=["#B84040", "#C07F20", "#4E8E75"],
         labels={"avg_risk_score": "avg_risk_score"},
     )
     _apply_layout(fig)
@@ -607,10 +621,10 @@ def render_shared_savings_tab(df: pd.DataFrame, filters: dict) -> None:
                 height=CHART_H,
                 labels={"shared_savings_ratio": "Shared savings ratio", "shared_savings_status": "Status"},
                 color_discrete_map={
-                    "qualified_savings": "#1D9E75",
-                    "savings_below_msr": "#5DCAA5",
-                    "break_even":        "#AFA9EC",
-                    "loss_not_shared":   "#E24B4A",
+                    "qualified_savings": "#2D7A5C",
+                    "savings_below_msr": "#4E8E75",
+                    "break_even":        "#8F89CC",
+                    "loss_not_shared":   "#B84040",
                     "shared_loss":       "#7B3FA0",
                     "unknown":           "#9c9a92",
                 },
@@ -648,8 +662,8 @@ def render_shared_savings_tab(df: pd.DataFrame, filters: dict) -> None:
             if rows:
                 q_data = pd.concat(rows)
                 color_map = {
-                    "Benchmark (V28 adj.)": "#AFA9EC",
-                    "Actual":               "#5DCAA5",
+                    "Benchmark (V28 adj.)": "#8F89CC",
+                    "Actual":               "#4E8E75",
                     "Benchmark (V24)":      "#D3D1C7",
                 }
                 fig2 = px.bar(
@@ -719,39 +733,12 @@ def render_shared_savings_tab(df: pd.DataFrame, filters: dict) -> None:
 
 
 def _render_v28_skew_chart(recon: pd.DataFrame) -> None:
-    """V28 version skew bar chart by enrollment type."""
-    if "enrollment_type" in recon.columns and "benchmark_version_skew" in recon.columns:
-        skew_grp = (
-            recon.groupby("enrollment_type")["benchmark_version_skew"]
-            .mean()
-            .reset_index()
-        )
-        if not skew_grp.empty:
-            skew_grp["direction"] = skew_grp["benchmark_version_skew"].apply(
-                lambda v: "V28 compression (−)" if pd.notna(v) and v > 0 else "V28 opportunity (+)"
-            )
-            colors = skew_grp["benchmark_version_skew"].apply(
-                lambda v: "#F09595" if pd.notna(v) and v > 0 else "#5DCAA5"
-            )
-            fig = go.Figure(go.Bar(
-                x=skew_grp["enrollment_type"],
-                y=skew_grp["benchmark_version_skew"],
-                marker_color=list(colors),
-                text=skew_grp["benchmark_version_skew"].apply(
-                    lambda v: f"{v:+.1%}" if pd.notna(v) else ""
-                ),
-                textposition="outside",
-            ))
-            fig.update_layout(
-                height=CHART_H,
-                yaxis=dict(tickformat=".1%", title="V24–V28 delta (%)"),
-                xaxis_title="",
-                **PLOTLY_LAYOUT,
-            )
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-            return
+    """V28 version skew bar chart by enrollment type.
 
-    # Fallback: static directional estimates from CMS Announcement Tables
+    Always uses static directional estimates from CMS Announcement Tables (build_enrollment_type_skew_summary).
+    Live per-row computation is bypassed: the raw benchmark_version_skew column does not differentiate
+    by enrollment type and subtracts in the wrong direction, producing uniformly negative values.
+    """
     skew_df = build_enrollment_type_skew_summary()
     pos = skew_df[skew_df["v28_delta_pct"] > 0]
     neg = skew_df[skew_df["v28_delta_pct"] < 0]
@@ -760,14 +747,14 @@ def _render_v28_skew_chart(recon: pd.DataFrame) -> None:
     if not pos.empty:
         fig.add_trace(go.Bar(
             x=pos["enrollment_type"], y=pos["v28_delta_pct"],
-            name="V28 opportunity (+)", marker_color="#5DCAA5",
+            name="V28 opportunity (+)", marker_color="#4E8E75",
             text=pos["v28_delta_pct"].apply(lambda v: f"+{v:.1f}%"),
             textposition="outside",
         ))
     if not neg.empty:
         fig.add_trace(go.Bar(
             x=neg["enrollment_type"], y=neg["v28_delta_pct"],
-            name="V28 compression (−)", marker_color="#F09595",
+            name="V28 compression (−)", marker_color="#C07070",
             text=neg["v28_delta_pct"].apply(lambda v: f"{v:.1f}%"),
             textposition="outside",
         ))
@@ -777,7 +764,7 @@ def _render_v28_skew_chart(recon: pd.DataFrame) -> None:
         xaxis_title="",
         **PLOTLY_LAYOUT,
     )
-    st.caption("⚠ Directional estimates from CMS Announcement Tables — apply national V28 delta factors by enrollment type.")
+    st.caption("Directional estimates from CMS Announcement Tables VIII-1 / VI-1 — national V28 delta factors by enrollment type.")
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
@@ -850,7 +837,7 @@ def render_pa_metrics_tab(df: pd.DataFrame, filters: dict) -> None:
         fig = px.bar(
             svc_melt, x="Service type", y="Rate (%)", color="Metric",
             barmode="stack",
-            color_discrete_map={"Approval rate": "#5DCAA5", "Denial rate": "#F09595"},
+            color_discrete_map={"Approval rate": "#4E8E75", "Denial rate": "#C07070"},
             height=CHART_H,
             labels={"Service type": "", "Rate (%)": "Rate (%)"},
         )
@@ -874,7 +861,7 @@ def render_pa_metrics_tab(df: pd.DataFrame, filters: dict) -> None:
             top_burden.columns = ["County", "Admin hrs / 1k ben"]
             fig2 = px.bar(
                 top_burden, x="County", y="Admin hrs / 1k ben",
-                color_discrete_sequence=["#7F77DD"],
+                color_discrete_sequence=["#6B63B5"],
                 height=CHART_H,
                 labels={"County": "", "Admin hrs / 1k ben": "Est. admin hrs / 1,000 ben"},
             )
