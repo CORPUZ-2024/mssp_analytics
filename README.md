@@ -41,7 +41,6 @@ The dashboard includes four tabs aligned to the project plan:
 - **HCC Risk Flags** — RADV-style exposure scoring and YoY risk score variance
 - **Shared Savings Model** — benchmark construction and savings/loss ratio simulation
 - **PA Metrics Simulation** — synthetic prior authorization metrics using utilization proxies
-- **FHIR Data Bridge** — PUF-to-FHIR mapping table and interoperability gap analysis
 
 ## Design highlights
 
@@ -52,4 +51,4 @@ The dashboard includes four tabs aligned to the project plan:
 
 ## Notes
 
-This repository is intended to capture the data ingestion and validation workflow for the MSSP project plan. The analytic modules are designed to be extended with domain-specific logic for RADV, shared savings, PA metrics, and FHIR mapping.
+This repository is intended to capture the data ingestion and validation workflow for the MSSP project plan. The analytic modules are designed to be extended with domain-specific logic for RADV, shared savings and PA metrics. 
