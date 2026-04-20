@@ -299,29 +299,19 @@ def render_sidebar(df: pd.DataFrame, active_tab: str) -> dict:
 
 
 def _render_sidebar_kpis(df: pd.DataFrame, active_tab: str) -> None:
-    def _kpi(label: str, val: str, sub: str = "") -> None:
-        st.markdown(
-            f'<div class="sb-metric">'
-            f'<div class="sm-label">{label}</div>'
-            f'<div class="sm-val">{val}</div>'
-            f'<div class="sm-sub">{sub}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
     if active_tab == "hcc":
         try:
             hcc_sum = build_hcc_risk_flag_summary(df, top_n=len(df))
-            flagged  = int(hcc_sum["radv_exposure_flag"].sum()) if "radv_exposure_flag" in hcc_sum.columns else 0
+            flagged   = int(hcc_sum["radv_exposure_flag"].sum()) if "radv_exposure_flag" in hcc_sum.columns else 0
             high_risk = int((hcc_sum.get("radv_exposure_level", pd.Series()) == "High").sum())
             median_eff = hcc_sum["expenditure_efficiency_ratio"].median() if "expenditure_efficiency_ratio" in hcc_sum.columns else None
         except Exception:
             flagged, high_risk, median_eff = 0, 0, None
 
-        _kpi("Counties flagged", str(flagged), f"of {len(df):,} · composite >0.5")
-        _kpi("High-risk (RADV)", str(high_risk), "composite >0.75")
+        st.metric("Counties flagged", str(flagged), help=f"of {len(df):,} · composite >0.5")
+        st.metric("High-risk (RADV)", str(high_risk), help="composite >0.75")
         eff_str = f"${median_eff:,.0f}" if pd.notna(median_eff) else "—"
-        _kpi("Median efficiency ratio", eff_str, "PER_CAPITA_EXP / AVG_RISK_SCORE")
+        st.metric("Median efficiency ratio", eff_str, help="PER_CAPITA_EXP / AVG_RISK_SCORE")
 
     elif active_tab == "savings":
         try:
@@ -332,15 +322,15 @@ def _render_sidebar_kpis(df: pd.DataFrame, active_tab: str) -> None:
         except Exception:
             savings_cnt, qual_cnt, avg_rate = 0, 0, None
 
-        _kpi("Counties w/ savings", str(savings_cnt), "52% of total (Track A)")
-        _kpi("Qualify after MSR", str(qual_cnt), f"lost {max(savings_cnt-qual_cnt,0)} below MSR")
+        st.metric("Counties w/ savings", str(savings_cnt), help="52% of total (Track A)")
+        st.metric("Qualify after MSR", str(qual_cnt), help=f"lost {max(savings_cnt-qual_cnt,0)} below MSR")
         rate_str = f"{avg_rate:+.1%}" if pd.notna(avg_rate) else "—"
-        _kpi("Avg savings rate", rate_str, "national MSSP avg 1–3%")
+        st.metric("Avg savings rate", rate_str, help="national MSSP avg 1–3%")
 
     elif active_tab == "pa":
-        _kpi("Simulated denial rate", "8.6%", "vs. 7.7% FFS reference")
-        _kpi("Appeal overturn rate",  "61.2%", "vs. >80% KFF MA data")
-        _kpi("Extended review est.",  "3.1%",  "modeled · no FFS equiv.")
+        st.metric("Simulated denial rate", "8.6%", help="vs. 7.7% FFS reference")
+        st.metric("Appeal overturn rate",  "61.2%", help="vs. >80% KFF MA data")
+        st.metric("Extended review est.",  "3.1%",  help="modeled · no FFS equiv.")
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +338,12 @@ def _render_sidebar_kpis(df: pd.DataFrame, active_tab: str) -> None:
 # ---------------------------------------------------------------------------
 
 def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
+    # Dtype safety — ensure float columns before any arithmetic
+    for _col in ("avg_risk_score", "per_capita_exp", "person_years"):
+        if _col in df.columns:
+            df = df.copy()
+            df[_col] = pd.to_numeric(df[_col], errors="coerce")
+
     try:
         summary = build_hcc_risk_flag_summary(df, top_n=len(df))
     except Exception as exc:
@@ -386,41 +382,56 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
     with col1:
         hist_title = "Risk score YoY delta distribution" if has_yoy else "Risk score distribution (2024)"
         st.markdown(f"**{hist_title}**")
-        if has_yoy:
-            st.caption("Counties above threshold flagged as RADV audit risk indicators · source: derived")
-        else:
-            st.caption(
-                "2024 performance year · CMS MSSP PUF dataset contains 2024 data only — "
-                "YoY delta unavailable · source: derived"
-            )
+        st.caption(
+            "AVG_RISK_SCORE delta by county · flagged above threshold · source: derived"
+            if has_yoy else
+            "2024 performance year · YoY unavailable for current filter · source: derived"
+        )
         hist_data = summary[x_col].dropna()
         if not hist_data.empty:
-            # Clip x-axis to IQR ± 1.5× fence so the spike near 0 fills the chart
-            q1, q3 = hist_data.quantile(0.05), hist_data.quantile(0.95)
-            iqr     = q3 - q1
-            x_min   = max(hist_data.min(), q1 - iqr)
-            x_max   = min(hist_data.max(), q3 + iqr)
-            plot_df = summary.dropna(subset=[x_col])
-            fig = px.histogram(
-                plot_df,
-                x=x_col, nbins=25,
-                color_discrete_sequence=["#7AAAC4"],
-                height=320,
-                labels={x_col: x_label},
-                range_x=[x_min, x_max],
-            )
-            nat_avg = float(hist_data.mean())
-            fig.add_vline(
-                x=nat_avg, line_dash="dash", line_color="rgba(180,100,60,0.7)",
-                annotation_text=f"Natl avg {nat_avg:+.1%}",
-                annotation_font_size=9,
-                annotation_position="top right",
-            )
-            _apply_layout(fig, showlegend=False)
-            st.caption(
-                f"n={len(hist_data):,} counties · showing 5th–95th pct range "
-                f"[{x_min:+.1%}, {x_max:+.1%}] · outliers clipped for readability"
-            )
+            if has_yoy:
+                # Discrete risk-tier bins matching mockup — use go.Bar to guarantee rendering
+                _bin_edges  = [-float("inf"), -0.05, 0.0, 0.02, 0.05, 0.10, 0.15, float("inf")]
+                _bin_labels = ["<−5%", "−5–0%", "0–2%", "2–5%", "5–10%", "10–15%", ">15%"]
+                _bin_colors = ["#B5D4F4", "#B5D4F4", "#B5D4F4", "#B5D4F4",
+                               "#EF9F27", "#D85A30", "#E24B4A"]
+                counts = (
+                    pd.cut(hist_data, bins=_bin_edges, labels=_bin_labels)
+                    .value_counts()
+                    .reindex(_bin_labels, fill_value=0)
+                )
+                nat_avg = float(hist_data.mean())
+                fig = go.Figure(go.Bar(
+                    x=_bin_labels, y=counts.values,
+                    marker_color=_bin_colors, marker_line_width=0,
+                    text=counts.values, textposition="outside",
+                ))
+                fig.add_hline(y=0, line_color="rgba(127,127,127,0.3)")
+                _apply_layout(fig, showlegend=False,
+                              yaxis_title="Counties",
+                              xaxis_title=x_label,
+                              height=320)
+                st.caption(f"n={len(hist_data):,} · natl avg {nat_avg:+.1%} · bars show county count per risk tier")
+            else:
+                # Absolute risk score — discrete quantile bands
+                _abs_edges  = [0, 0.70, 0.85, 1.00, 1.20, 1.50, float("inf")]
+                _abs_labels = ["<0.70", "0.70–0.85", "0.86–1.00", "1.01–1.20", "1.21–1.50", "1.51+"]
+                _abs_colors = ["#7AAAC4", "#7AAAC4", "#4E8E75", "#C07F20", "#B87060", "#B84040"]
+                counts = (
+                    pd.cut(hist_data, bins=_abs_edges, labels=_abs_labels)
+                    .value_counts()
+                    .reindex(_abs_labels, fill_value=0)
+                )
+                fig = go.Figure(go.Bar(
+                    x=_abs_labels, y=counts.values,
+                    marker_color=_abs_colors, marker_line_width=0,
+                    text=counts.values, textposition="outside",
+                ))
+                _apply_layout(fig, showlegend=False,
+                              yaxis_title="Counties",
+                              xaxis_title="Risk score band",
+                              height=320)
+                st.caption(f"n={len(hist_data):,} counties · 2024 PY · bars show count per RAF band")
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         else:
             st.caption("No data available.")
@@ -431,24 +442,40 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
         if "expenditure_efficiency_ratio" in summary.columns:
             scatter_x = x_col if not summary[x_col].isna().all() else "avg_risk_score"
             scatter_df = summary.dropna(subset=[scatter_x, "expenditure_efficiency_ratio"])
-            if len(scatter_df) > 500:
-                scatter_df = scatter_df.sample(500, random_state=42)
+            # Filter to counties with sufficient person-years (reduces noise)
+            if "person_years" in scatter_df.columns:
+                scatter_df = scatter_df[scatter_df["person_years"].fillna(0) >= 100]
+            if len(scatter_df) > 600:
+                scatter_df = scatter_df.sample(600, random_state=42)
             if not scatter_df.empty:
-                color_col = "radv_exposure_flag" if "radv_exposure_flag" in scatter_df.columns else None
-                fig2 = px.scatter(
-                    scatter_df,
-                    x=scatter_x,
-                    y="expenditure_efficiency_ratio",
-                    color=color_col,
-                    color_discrete_map={True: "#B84040", False: "#4E8E75"},
-                    opacity=0.75,
-                    height=CHART_H,
-                    labels={
-                        scatter_x: x_label,
-                        "expenditure_efficiency_ratio": "Efficiency ratio ($/unit)",
-                        "radv_exposure_flag": "High RADV exposure",
-                    },
-                )
+                # 3-tier risk grouping matching mockup (Low / Medium / High)
+                level_col = "radv_exposure_level" if "radv_exposure_level" in scatter_df.columns else None
+                if level_col:
+                    fig2 = px.scatter(
+                        scatter_df, x=scatter_x, y="expenditure_efficiency_ratio",
+                        color=level_col,
+                        color_discrete_map={
+                            "Low":    "#4E8E75",
+                            "Medium": "#C07F20",
+                            "High":   "#B84040",
+                        },
+                        opacity=0.72, height=320,
+                        labels={
+                            scatter_x: x_label,
+                            "expenditure_efficiency_ratio": "Efficiency ratio ($/unit)",
+                            level_col: "RADV risk",
+                        },
+                        category_orders={level_col: ["Low", "Medium", "High"]},
+                    )
+                else:
+                    fig2 = px.scatter(
+                        scatter_df, x=scatter_x, y="expenditure_efficiency_ratio",
+                        color_discrete_sequence=["#7AAAC4"],
+                        opacity=0.72, height=320,
+                        labels={scatter_x: x_label,
+                                "expenditure_efficiency_ratio": "Efficiency ratio ($/unit)"},
+                    )
+                fig2.update_yaxes(tickprefix="$", tickformat=",")
                 _apply_layout(fig2)
                 st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
             else:
@@ -626,6 +653,12 @@ def _raf_band_summary(recon: pd.DataFrame) -> pd.DataFrame:
 
 
 def render_shared_savings_tab(df: pd.DataFrame, filters: dict) -> None:
+    # Dtype safety
+    for _col in ("avg_risk_score", "per_capita_exp"):
+        if _col in df.columns:
+            df = df.copy()
+            df[_col] = pd.to_numeric(df[_col], errors="coerce")
+
     track_type = filters.get("track_type", "A")
     recon = build_reconciliation(df, track_type=track_type)
     if recon.empty:
@@ -641,27 +674,39 @@ def render_shared_savings_tab(df: pd.DataFrame, filters: dict) -> None:
         st.markdown("**ACO financial performance distribution**")
         st.caption("Simulated shared savings / loss · Track A parameters · MSR threshold shown · source: derived")
         if "shared_savings_ratio" in recon.columns:
-            fig = px.histogram(
-                recon.dropna(subset=["shared_savings_ratio"]),
-                x="shared_savings_ratio",
-                color="shared_savings_status" if "shared_savings_status" in recon.columns else None,
-                nbins=24, barmode="stack", opacity=0.88,
-                height=CHART_H,
-                labels={"shared_savings_ratio": "Shared savings ratio", "shared_savings_status": "Status"},
-                color_discrete_map={
-                    "qualified_savings": "#2D7A5C",
-                    "savings_below_msr": "#4E8E75",
-                    "break_even":        "#8F89CC",
-                    "loss_not_shared":   "#B84040",
-                    "shared_loss":       "#7B3FA0",
-                    "unknown":           "#9c9a92",
-                },
+            # Discrete savings bands matching mockup — go.Bar avoids px.histogram rendering bugs
+            _sv_edges  = [-float("inf"), -0.10, -0.05, -0.01, 0.01, 0.03, 0.05, float("inf")]
+            _sv_labels = ["<−10%", "−5–10%", "−1–5%", "Break-even", "+1–3%", "+3–5%", ">+5%"]
+            _sv_colors = ["#B84040", "#C07070", "#C09090", "#8F89CC",
+                          "#4E8E75", "#2D7A5C", "#1D6349"]
+            sv_data = recon["shared_savings_ratio"].dropna()
+            sv_counts = (
+                pd.cut(sv_data, bins=_sv_edges, labels=_sv_labels)
+                .value_counts()
+                .reindex(_sv_labels, fill_value=0)
             )
-            fig.add_vline(
-                x=0, line_dash="dash", line_color="rgba(127,127,127,0.5)",
-                annotation_text="Break-even", annotation_font_size=10,
-            )
-            _apply_layout(fig)
+            fig = go.Figure(go.Bar(
+                x=_sv_labels, y=sv_counts.values,
+                marker_color=_sv_colors, marker_line_width=0,
+                text=sv_counts.values, textposition="outside",
+            ))
+            # MSR threshold annotation — Track A 3.5% shown as reference band
+            msr_label = "+1–3%"
+            if msr_label in _sv_labels:
+                msr_x = _sv_labels.index(msr_label)
+                fig.add_shape(
+                    type="line",
+                    x0=msr_x - 0.5, x1=msr_x + 0.5,
+                    y0=0, y1=1, yref="paper",
+                    line=dict(color="#D85A30", width=1.5, dash="dot"),
+                )
+                fig.add_annotation(
+                    x=msr_x, y=1.05, yref="paper",
+                    text="MSR threshold (3.5%)", showarrow=False,
+                    font=dict(size=9, color="#D85A30"),
+                )
+            _apply_layout(fig, showlegend=False,
+                          yaxis_title="Counties", height=CHART_H)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     with col2:
@@ -690,8 +735,8 @@ def render_shared_savings_tab(df: pd.DataFrame, filters: dict) -> None:
             if rows:
                 q_data = pd.concat(rows)
                 color_map = {
-                    "Benchmark (V28 adj.)": "#8F89CC",
-                    "Actual":               "#4E8E75",
+                    "Benchmark (V28 adj.)": "#AFA9EC",
+                    "Actual":               "#5DCAA5",
                     "Benchmark (V24)":      "#D3D1C7",
                 }
                 fig2 = px.bar(
@@ -865,7 +910,7 @@ def render_pa_metrics_tab(df: pd.DataFrame, filters: dict) -> None:
         fig = px.bar(
             svc_melt, x="Service type", y="Rate (%)", color="Metric",
             barmode="stack",
-            color_discrete_map={"Approval rate": "#4E8E75", "Denial rate": "#C07070"},
+            color_discrete_map={"Approval rate": "#5DCAA5", "Denial rate": "#F09595"},
             height=CHART_H,
             labels={"Service type": "", "Rate (%)": "Rate (%)"},
         )
@@ -889,7 +934,7 @@ def render_pa_metrics_tab(df: pd.DataFrame, filters: dict) -> None:
             top_burden.columns = ["County", "Admin hrs / 1k ben"]
             fig2 = px.bar(
                 top_burden, x="County", y="Admin hrs / 1k ben",
-                color_discrete_sequence=["#6B63B5"],
+                color_discrete_sequence=["#7F77DD"],
                 height=CHART_H,
                 labels={"County": "", "Admin hrs / 1k ben": "Est. admin hrs / 1,000 ben"},
             )
