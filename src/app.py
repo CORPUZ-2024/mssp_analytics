@@ -8,7 +8,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 import streamlit as st
+
+# Streamlit's theme injection corrupts the Plotly template object in Plotly ≥5.x,
+# causing px.* calls to raise ValueError("Invalid value") when iterating
+# template.data.scatter / template.data.bar properties.
+# Resetting to the built-in "plotly" template before any chart is rendered
+# bypasses Streamlit's broken template while keeping PLOTLY_LAYOUT overrides.
+pio.templates.default = "plotly"
 from packaging.version import Version as _V
 
 if _V(st.__version__) >= _V("1.18"):
@@ -469,6 +477,26 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
         ) else "avg_risk_score"
         sc_x_label = x_label if scatter_x == x_col else "Risk score"
 
+        # --- DEBUG block (remove after fix) ---
+        with st.expander("Scatter debug", expanded=True):
+            st.write(f"df rows: {len(df)}")
+            st.write(f"risk_score_yoy_delta in df.columns: {'risk_score_yoy_delta' in df.columns}")
+            if "risk_score_yoy_delta" in df.columns:
+                st.write(f"  non-null yoy_delta: {df['risk_score_yoy_delta'].notna().sum()}")
+                st.write(f"  sample values: {df['risk_score_yoy_delta'].dropna().head(3).tolist()}")
+            st.write(f"expenditure_efficiency_ratio in df.columns: {'expenditure_efficiency_ratio' in df.columns}")
+            if "expenditure_efficiency_ratio" in df.columns:
+                st.write(f"  non-null eff_ratio: {df['expenditure_efficiency_ratio'].notna().sum()}")
+                st.write(f"  sample values: {df['expenditure_efficiency_ratio'].dropna().head(3).tolist()}")
+                st.write(f"  dtype: {df['expenditure_efficiency_ratio'].dtype}")
+            st.write(f"scatter_x resolved to: '{scatter_x}'")
+            _pre = df.dropna(subset=[scatter_x, "expenditure_efficiency_ratio"]) if "expenditure_efficiency_ratio" in df.columns else pd.DataFrame()
+            st.write(f"rows after dropna: {len(_pre)}")
+            if "person_years" in _pre.columns:
+                _py = pd.to_numeric(_pre["person_years"], errors="coerce")
+                st.write(f"rows after person_years>=100: {(_py >= 100).sum()}")
+                st.write(f"person_years sample: {_py.dropna().head(5).tolist()}")
+
         if "expenditure_efficiency_ratio" in df.columns:
             scatter_df = df.dropna(subset=[scatter_x, "expenditure_efficiency_ratio"])
             # Filter to counties with sufficient person-years (reduces noise)
@@ -483,39 +511,50 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
             key_cols = [c for c in ["state_id", "county_id", "enrollment_type", "year"]
                         if c in summary.columns and c in scatter_df.columns]
             if key_cols and "radv_exposure_level" in summary.columns:
-                level_merge = summary[key_cols + ["radv_exposure_level"]].drop_duplicates(key_cols)
+                level_merge = (
+                    summary[key_cols + ["radv_exposure_level"]]
+                    .drop_duplicates(key_cols)
+                    .assign(radv_exposure_level=lambda d: d["radv_exposure_level"].astype(str))
+                )
                 scatter_df = scatter_df.merge(level_merge, on=key_cols, how="left", suffixes=("", "_s"))
 
             if not scatter_df.empty:
                 level_col = "radv_exposure_level" if "radv_exposure_level" in scatter_df.columns else None
-                if level_col and scatter_df[level_col].notna().any():
-                    fig2 = px.scatter(
-                        scatter_df, x=scatter_x, y="expenditure_efficiency_ratio",
-                        color=level_col,
-                        color_discrete_map={
-                            "Low":    "#5DCAA5",
-                            "Medium": "#EF9F27",
-                            "High":   "#E24B4A",
-                        },
-                        opacity=0.72, height=320,
-                        labels={
-                            scatter_x: sc_x_label,
-                            "expenditure_efficiency_ratio": "Efficiency ratio ($/unit)",
-                            level_col: "RADV risk",
-                        },
-                        category_orders={level_col: ["Low", "Medium", "High"]},
-                    )
+                has_color  = level_col is not None and scatter_df[level_col].notna().any()
+
+                # Use go.Scatter directly — px.scatter with Categorical color can silently
+                # produce empty traces when category dtype doesn't align with discrete map
+                x_vals  = scatter_df[scatter_x].tolist()
+                y_vals  = scatter_df["expenditure_efficiency_ratio"].tolist()
+
+                if has_color:
+                    color_map = {"Low": "#5DCAA5", "Medium": "#EF9F27", "High": "#E24B4A"}
+                    fig2 = go.Figure()
+                    for lvl, clr in color_map.items():
+                        mask = scatter_df[level_col].astype(str) == lvl
+                        sub  = scatter_df[mask]
+                        if sub.empty:
+                            continue
+                        fig2.add_trace(go.Scatter(
+                            x=sub[scatter_x].tolist(),
+                            y=sub["expenditure_efficiency_ratio"].tolist(),
+                            mode="markers",
+                            name=lvl,
+                            marker=dict(color=clr, opacity=0.72, size=5),
+                        ))
                 else:
-                    fig2 = px.scatter(
-                        scatter_df, x=scatter_x, y="expenditure_efficiency_ratio",
-                        color_discrete_sequence=["#AFA9EC"],
-                        opacity=0.72, height=320,
-                        labels={scatter_x: sc_x_label,
-                                "expenditure_efficiency_ratio": "Efficiency ratio ($/unit)"},
-                    )
-                fig2.update_xaxes(tickformat=".0%" if scatter_x == "risk_score_yoy_delta" else "")
-                fig2.update_yaxes(tickprefix="$", tickformat=",")
-                _apply_layout(fig2)
+                    fig2 = go.Figure(go.Scatter(
+                        x=x_vals, y=y_vals,
+                        mode="markers",
+                        marker=dict(color="#AFA9EC", opacity=0.72, size=5),
+                        showlegend=False,
+                    ))
+
+                x_tick = dict(tickformat=".0%") if scatter_x == "risk_score_yoy_delta" else {}
+                fig2.update_xaxes(title_text=sc_x_label, **x_tick)
+                fig2.update_yaxes(title_text="Efficiency ratio ($/unit)",
+                                  tickprefix="$", tickformat=",.0f")
+                _apply_layout(fig2, height=320)
                 st.caption(
                     f"n={len(scatter_df):,} county×enrollment rows · person_years≥100 filter applied"
                 )
@@ -632,13 +671,20 @@ def _render_oc_stability_chart(df: pd.DataFrame, summary: pd.DataFrame) -> None:
 
         if frames:
             combined = pd.concat(frames)
-            fig = px.line(
-                combined, x="data_cut", y="avg_risk_score", color="label",
-                markers=True, height=CHART_H,
-                labels={"data_cut": "Data cut", "avg_risk_score": "avg_risk_score", "label": "County"},
-                color_discrete_sequence=["#B84040", "#C07F20", "#4E8E75"],
-            )
-            _apply_layout(fig)
+            colors = ["#B84040", "#C07F20", "#4E8E75"]
+            fig = go.Figure()
+            for i, (lbl, grp) in enumerate(combined.groupby("label", sort=False)):
+                fig.add_trace(go.Scatter(
+                    x=grp["data_cut"].tolist(),
+                    y=grp["avg_risk_score"].tolist(),
+                    mode="lines+markers",
+                    name=str(lbl),
+                    line=dict(color=colors[i % len(colors)]),
+                    marker=dict(color=colors[i % len(colors)], size=6),
+                ))
+            fig.update_xaxes(title_text="Data cut")
+            fig.update_yaxes(title_text="avg_risk_score")
+            _apply_layout(fig, height=CHART_H)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             return
 
@@ -647,27 +693,25 @@ def _render_oc_stability_chart(df: pd.DataFrame, summary: pd.DataFrame) -> None:
 
 def _render_oc_stability_mock() -> None:
     """Simulated OC stability line chart for illustration when live multi-cut data is absent."""
-    mock_data = pd.DataFrame({
-        "Data cut": ["OC1", "OC2", "OC3", "Final"] * 3,
-        "avg_risk_score": [
-            1.18, 1.24, 1.31, 1.33,   # High risk — unstable
-            0.92, 0.94, 0.95, 0.95,   # Medium — stable
-            0.88, 0.88, 0.89, 0.89,   # Low — stable
-        ],
-        "County": (
-            ["County A (High)"] * 4 +
-            ["County B (Med)"] * 4 +
-            ["County C (Low)"] * 4
-        ),
-    })
-    fig = px.line(
-        mock_data, x="Data cut", y="avg_risk_score", color="County",
-        markers=True, height=CHART_H,
-        color_discrete_sequence=["#B84040", "#C07F20", "#4E8E75"],
-        labels={"avg_risk_score": "avg_risk_score"},
-    )
-    _apply_layout(fig)
-    st.caption("⚠ Simulated trend — load OC1/OC3/Final vintages for actual OC stability analysis.")
+    cuts   = ["OC1", "OC2", "OC3", "Final"]
+    series = {
+        "County A (High)": ([1.18, 1.24, 1.31, 1.33], "#E24B4A"),
+        "County B (Med)":  ([0.92, 0.94, 0.95, 0.95], "#EF9F27"),
+        "County C (Low)":  ([0.88, 0.88, 0.89, 0.89], "#5DCAA5"),
+    }
+    fig = go.Figure()
+    for name, (vals, clr) in series.items():
+        fig.add_trace(go.Scatter(
+            x=cuts, y=vals,
+            mode="lines+markers",
+            name=name,
+            line=dict(color=clr),
+            marker=dict(color=clr, size=6),
+        ))
+    fig.update_xaxes(title_text="Data cut")
+    fig.update_yaxes(title_text="avg_risk_score")
+    _apply_layout(fig, height=CHART_H)
+    st.caption("Simulated trend — load OC1/OC3/Final vintages for actual OC stability analysis.")
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
