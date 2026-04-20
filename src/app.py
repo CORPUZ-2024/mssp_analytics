@@ -477,32 +477,12 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
         ) else "avg_risk_score"
         sc_x_label = x_label if scatter_x == x_col else "Risk score"
 
-        # --- DEBUG block (remove after fix) ---
-        with st.expander("Scatter debug", expanded=True):
-            st.write(f"df rows: {len(df)}")
-            st.write(f"risk_score_yoy_delta in df.columns: {'risk_score_yoy_delta' in df.columns}")
-            if "risk_score_yoy_delta" in df.columns:
-                st.write(f"  non-null yoy_delta: {df['risk_score_yoy_delta'].notna().sum()}")
-                st.write(f"  sample values: {df['risk_score_yoy_delta'].dropna().head(3).tolist()}")
-            st.write(f"expenditure_efficiency_ratio in df.columns: {'expenditure_efficiency_ratio' in df.columns}")
-            if "expenditure_efficiency_ratio" in df.columns:
-                st.write(f"  non-null eff_ratio: {df['expenditure_efficiency_ratio'].notna().sum()}")
-                st.write(f"  sample values: {df['expenditure_efficiency_ratio'].dropna().head(3).tolist()}")
-                st.write(f"  dtype: {df['expenditure_efficiency_ratio'].dtype}")
-            st.write(f"scatter_x resolved to: '{scatter_x}'")
-            _pre = df.dropna(subset=[scatter_x, "expenditure_efficiency_ratio"]) if "expenditure_efficiency_ratio" in df.columns else pd.DataFrame()
-            st.write(f"rows after dropna: {len(_pre)}")
-            if "person_years" in _pre.columns:
-                _py = pd.to_numeric(_pre["person_years"], errors="coerce")
-                st.write(f"rows after person_years>=100: {(_py >= 100).sum()}")
-                st.write(f"person_years sample: {_py.dropna().head(5).tolist()}")
-
         if "expenditure_efficiency_ratio" in df.columns:
             scatter_df = df.dropna(subset=[scatter_x, "expenditure_efficiency_ratio"])
             # Filter to counties with sufficient person-years (reduces noise)
             if "person_years" in scatter_df.columns:
                 scatter_df = scatter_df[
-                    pd.to_numeric(scatter_df["person_years"], errors="coerce").fillna(0) >= 100
+                    pd.to_numeric(scatter_df["person_years"], errors="coerce").fillna(0) >= 10
                 ]
             if len(scatter_df) > 600:
                 scatter_df = scatter_df.sample(600, random_state=42)
@@ -556,7 +536,7 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
                                   tickprefix="$", tickformat=",.0f")
                 _apply_layout(fig2, height=320)
                 st.caption(
-                    f"n={len(scatter_df):,} county×enrollment rows · person_years≥100 filter applied"
+                    f"n={len(scatter_df):,} county×enrollment rows · person_years≥10 filter applied"
                 )
                 st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
             else:
@@ -1095,9 +1075,9 @@ def main() -> None:
                     margin-bottom:0.75rem;padding-bottom:0.5rem;
                     border-bottom:0.5px solid rgba(127,127,127,0.2)">
           <div>
-            <div style="font-size:16px;font-weight:600">CORPUZ-2024 / cost_risk_score_agg_dashb</div>
+            <div style="font-size:16px;font-weight:600">CORPUZ-2024 / mssp_analytics</div>
             <div style="font-size:11px;opacity:0.55;margin-top:2px">
-              CMS MSSP County-Level Analytics &middot; v3 modules &middot; 2024 performance year
+              CMS MSSP County-Level Analytics &middot; v5 spec &middot; PY2023–2024 &middot; Modules A · B · C
             </div>
           </div>
           <div style="display:flex;gap:6px">
@@ -1143,11 +1123,11 @@ def main() -> None:
         st.warning("No records returned from the CMS API. Please try again later.")
         st.stop()
 
-    # --- Three tabs (Module D / FHIR removed per v5 spec) ---
+    # --- Three tabs — v5 spec (Module D / FHIR removed) ---
     tab1, tab2, tab3 = st.tabs([
-        "Module A — HCC risk flags",
-        "Module B — Shared savings",
-        "Module C — PA metrics",
+        "A — HCC & RADV risk flags",
+        "B — Shared savings model",
+        "C — PA metrics (CMS-0057-F)",
     ])
 
     # Determine active tab for sidebar filter selection
@@ -1161,10 +1141,13 @@ def main() -> None:
     )
     active_tab_sel = st.sidebar.selectbox(
         "Sidebar filters for",
-        ["Module A — HCC risk flags", "Module B — Shared savings", "Module C — PA metrics"],
+        ["A — HCC & RADV risk flags", "B — Shared savings model", "C — PA metrics (CMS-0057-F)"],
     )
-    tab_key = {"Module A — HCC risk flags": "hcc", "Module B — Shared savings": "savings",
-               "Module C — PA metrics": "pa"}.get(active_tab_sel, "hcc")
+    tab_key = {
+        "A — HCC & RADV risk flags":     "hcc",
+        "B — Shared savings model":      "savings",
+        "C — PA metrics (CMS-0057-F)":   "pa",
+    }.get(active_tab_sel, "hcc")
 
     # Sidebar uses hcc_df for state name options (has 2023+2024 coverage)
     filters = render_sidebar(hcc_df if tab_key == "hcc" else df, tab_key)
