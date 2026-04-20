@@ -57,9 +57,12 @@ def build_hcc_risk_flag_summary(
     summary_columns = [
         "year",
         "state_id",
+        "state_name",
         "county_id",
+        "county_name",
         "enrollment_type",
         "avg_risk_score",
+        "person_years",
         "risk_score_yoy_delta",
         "per_capita_exp",
         "exp_growth_ratio",

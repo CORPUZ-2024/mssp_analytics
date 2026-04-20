@@ -344,6 +344,26 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
             df = df.copy()
             df[_col] = pd.to_numeric(df[_col], errors="coerce")
 
+    # Pre-compute YoY delta on df so scatter can use it directly
+    # (summary only includes rows with non-NaN radv_exposure_score, causing dropna to
+    # eliminate most rows when joined with efficiency_ratio from 2023-only rows)
+    if "risk_score_yoy_delta" not in df.columns:
+        try:
+            from src.modules.hcc_radv_risk_flags.risk_score_variance import (
+                compute_risk_score_yoy_delta,
+            )
+            df = compute_risk_score_yoy_delta(df)
+        except Exception:
+            pass
+
+    # Ensure efficiency ratio is on df before summary is built
+    if "expenditure_efficiency_ratio" not in df.columns:
+        if "per_capita_exp" in df.columns and "avg_risk_score" in df.columns:
+            df["expenditure_efficiency_ratio"] = (
+                df["per_capita_exp"]
+                / pd.to_numeric(df["avg_risk_score"], errors="coerce").replace({0: pd.NA})
+            )
+
     try:
         summary = build_hcc_risk_flag_summary(df, top_n=len(df))
     except Exception as exc:
@@ -439,29 +459,47 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
     with col2:
         st.markdown("**Risk score growth vs. expenditure efficiency ratio**")
         st.caption("X: YoY delta (%) · Y: PER_CAPITA_EXP / AVG_RISK_SCORE ($/unit) · source: derived")
-        if "expenditure_efficiency_ratio" in summary.columns:
-            scatter_x = x_col if not summary[x_col].isna().all() else "avg_risk_score"
-            scatter_df = summary.dropna(subset=[scatter_x, "expenditure_efficiency_ratio"])
+
+        # Use df directly — summary may drop rows where yoy_delta and efficiency_ratio
+        # are both non-NaN due to year mismatch (2023 rows have yoy_delta=NaN;
+        # 2024 rows that matched get yoy_delta but summary sorting may exclude them)
+        scatter_x = "risk_score_yoy_delta" if (
+            "risk_score_yoy_delta" in df.columns
+            and df["risk_score_yoy_delta"].notna().any()
+        ) else "avg_risk_score"
+        sc_x_label = x_label if scatter_x == x_col else "Risk score"
+
+        if "expenditure_efficiency_ratio" in df.columns:
+            scatter_df = df.dropna(subset=[scatter_x, "expenditure_efficiency_ratio"])
             # Filter to counties with sufficient person-years (reduces noise)
             if "person_years" in scatter_df.columns:
-                scatter_df = scatter_df[scatter_df["person_years"].fillna(0) >= 100]
+                scatter_df = scatter_df[
+                    pd.to_numeric(scatter_df["person_years"], errors="coerce").fillna(0) >= 100
+                ]
             if len(scatter_df) > 600:
                 scatter_df = scatter_df.sample(600, random_state=42)
+
+            # Merge RADV level from summary for coloring
+            key_cols = [c for c in ["state_id", "county_id", "enrollment_type", "year"]
+                        if c in summary.columns and c in scatter_df.columns]
+            if key_cols and "radv_exposure_level" in summary.columns:
+                level_merge = summary[key_cols + ["radv_exposure_level"]].drop_duplicates(key_cols)
+                scatter_df = scatter_df.merge(level_merge, on=key_cols, how="left", suffixes=("", "_s"))
+
             if not scatter_df.empty:
-                # 3-tier risk grouping matching mockup (Low / Medium / High)
                 level_col = "radv_exposure_level" if "radv_exposure_level" in scatter_df.columns else None
-                if level_col:
+                if level_col and scatter_df[level_col].notna().any():
                     fig2 = px.scatter(
                         scatter_df, x=scatter_x, y="expenditure_efficiency_ratio",
                         color=level_col,
                         color_discrete_map={
-                            "Low":    "#4E8E75",
-                            "Medium": "#C07F20",
-                            "High":   "#B84040",
+                            "Low":    "#5DCAA5",
+                            "Medium": "#EF9F27",
+                            "High":   "#E24B4A",
                         },
                         opacity=0.72, height=320,
                         labels={
-                            scatter_x: x_label,
+                            scatter_x: sc_x_label,
                             "expenditure_efficiency_ratio": "Efficiency ratio ($/unit)",
                             level_col: "RADV risk",
                         },
@@ -470,16 +508,20 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
                 else:
                     fig2 = px.scatter(
                         scatter_df, x=scatter_x, y="expenditure_efficiency_ratio",
-                        color_discrete_sequence=["#7AAAC4"],
+                        color_discrete_sequence=["#AFA9EC"],
                         opacity=0.72, height=320,
-                        labels={scatter_x: x_label,
+                        labels={scatter_x: sc_x_label,
                                 "expenditure_efficiency_ratio": "Efficiency ratio ($/unit)"},
                     )
+                fig2.update_xaxes(tickformat=".0%" if scatter_x == "risk_score_yoy_delta" else "")
                 fig2.update_yaxes(tickprefix="$", tickformat=",")
                 _apply_layout(fig2)
+                st.caption(
+                    f"n={len(scatter_df):,} county×enrollment rows · person_years≥100 filter applied"
+                )
                 st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
             else:
-                st.caption("No data after removing nulls.")
+                st.caption("No data after filtering — check person_years or null efficiency values.")
         else:
             st.caption("Expenditure efficiency column unavailable.")
 
@@ -506,8 +548,11 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
 
     display = flagged_df.head(20).copy()
     table_cols: dict[str, str] = {}
-    if "county_id"                  in display.columns: table_cols["county_id"]                  = "County"
-    if "state_id"                   in display.columns: table_cols["state_id"]                   = "State"
+    # Prefer human-readable names; fall back to ID codes if names absent
+    county_col = "county_name" if "county_name" in display.columns else "county_id"
+    state_col  = "state_name"  if "state_name"  in display.columns else "state_id"
+    if county_col                   in display.columns: table_cols[county_col]                   = "County"
+    if state_col                    in display.columns: table_cols[state_col]                    = "State"
     if "enrollment_type"            in display.columns: table_cols["enrollment_type"]            = "Enroll type"
     if x_col                        in display.columns: table_cols[x_col]                        = "YoY risk Δ" if has_yoy else "Risk score"
     if "exp_growth_ratio"           in display.columns: table_cols["exp_growth_ratio"]           = "Exp growth ratio"
@@ -518,6 +563,19 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
 
     if table_cols:
         tbl = display[list(table_cols.keys())].rename(columns=table_cols).reset_index(drop=True)
+        # Title-case name columns for readability
+        for _nc in ("County", "State"):
+            if _nc in tbl.columns:
+                tbl[_nc] = tbl[_nc].astype(str).str.strip().str.title()
+        # Format numeric columns
+        if "YoY risk Δ" in tbl.columns:
+            tbl["YoY risk Δ"] = pd.to_numeric(tbl["YoY risk Δ"], errors="coerce").apply(
+                lambda v: f"{v:+.2%}" if pd.notna(v) else "—"
+            )
+        if "Exp growth ratio" in tbl.columns:
+            tbl["Exp growth ratio"] = pd.to_numeric(tbl["Exp growth ratio"], errors="coerce").apply(
+                lambda v: f"{v:+.2%}" if pd.notna(v) else "—"
+            )
         if "RADV flag" not in tbl.columns and "Composite" in tbl.columns:
             scores = display["radv_exposure_score"].reset_index(drop=True)
             high_q = scores.quantile(0.67)
