@@ -33,8 +33,29 @@ python -m src.cli ingest --input raw/mssp_puf.csv --output clean/mssp_puf_clean.
 Launch the app with:
 
 ```bash
-streamlit run src/app.py
+py -m streamlit run src/app.py
 ```
+
+> **Windows note:** `streamlit` and `pip` are often not on the system PATH in cmd.exe.
+> Use `py -m streamlit` and `py -m pip` as shown above — these always work regardless of PATH.
+> To make the bare `streamlit` command available permanently, add Python's Scripts folder to PATH:
+> ```
+> setx PATH "%PATH%;C:\Users\<you>\AppData\Local\Programs\Python\Python39\Scripts"
+> ```
+> Then reopen the terminal.
+
+### Share the app publicly
+
+| Method | Best for | Cost | URL lifetime |
+|---|---|---|---|
+| [Streamlit Community Cloud](https://streamlit.io/cloud) | Permanent public link from GitHub | Free | Permanent |
+| [ngrok](https://ngrok.com) | Quick demo share | Free tier | Session only |
+| [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) | Stable tunnel, no port forwarding | Free | Persistent |
+
+**Fastest option for a non-technical audience:**
+1. Push this repo to GitHub (public or private)
+2. Go to [share.streamlit.io](https://share.streamlit.io) → New app → select repo → `src/app.py`
+3. Share the generated `https://*.streamlit.app` URL — no install required for viewers
 
 The dashboard includes four tabs aligned to the project plan:
 
