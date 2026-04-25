@@ -33,6 +33,89 @@ def build_pa_metrics_report(df: pd.DataFrame) -> pd.DataFrame:
     return metrics
 
 
+def build_cms_field_table_from_disclosures(disclosures_df: pd.DataFrame) -> pd.DataFrame:
+    """Build a comparison table using real disclosure data."""
+    if disclosures_df.empty:
+        return pd.DataFrame()
+    
+    # Average across all payers in the disclosure file
+    agg = disclosures_df.agg({
+        "total_requests": "sum",
+        "approved_requests": "sum",
+        "denied_requests": "sum",
+        "appeals_overturned": "sum",
+        "expedited_requests": "sum",
+        "expedited_approved": "sum",
+        "expedited_denied": "sum"
+    })
+    
+    total_std = agg["total_requests"]
+    app_std = agg["approved_requests"]
+    den_std = agg["denied_requests"]
+    overturned = agg["appeals_overturned"]
+    total_exp = agg["expedited_requests"]
+    app_exp = agg["expedited_approved"]
+    den_exp = agg["expedited_denied"]
+    
+    std_approval = app_std / total_std if total_std > 0 else 0
+    std_denial = den_std / total_std if total_std > 0 else 0
+    app_overturn = overturned / den_std if den_std > 0 else 0
+    exp_approval = app_exp / total_exp if total_exp > 0 else 0
+    exp_denial = den_exp / total_exp if total_exp > 0 else 0
+
+    rows = [
+        {
+            "field_num":   1,
+            "cms_field":   PA_FIELD_SOURCE_TYPES[1]["name"],
+            "source_type": "external",
+            "value":       "Refer to Plan Disclosures",
+            "ffs_ref":     "CMS PA list (Jan 2026)",
+            "note":        "Real data from ingested PDF disclosures.",
+        },
+        {
+            "field_num":   2,
+            "cms_field":   PA_FIELD_SOURCE_TYPES[2]["name"],
+            "source_type": "external",
+            "value":       f"{std_approval:.1%}",
+            "ffs_ref":     "92.3%",
+            "note":        f"Based on {total_std:,} standard requests.",
+        },
+        {
+            "field_num":   3,
+            "cms_field":   PA_FIELD_SOURCE_TYPES[3]["name"],
+            "source_type": "external",
+            "value":       f"{std_denial:.1%}",
+            "ffs_ref":     "7.7%",
+            "note":        f"Based on {den_std:,} standard denials.",
+        },
+        {
+            "field_num":   4,
+            "cms_field":   PA_FIELD_SOURCE_TYPES[4]["name"],
+            "source_type": "external",
+            "value":       f"{app_overturn:.1%}",
+            "ffs_ref":     "~6.4% appeal rate",
+            "note":        f"Based on {overturned:,} overturned appeals.",
+        },
+        {
+            "field_num":   6,
+            "cms_field":   PA_FIELD_SOURCE_TYPES[6]["name"],
+            "source_type": "external",
+            "value":       f"{exp_approval:.1%}",
+            "ffs_ref":     "89.1%",
+            "note":        f"Based on {total_exp:,} expedited requests.",
+        },
+        {
+            "field_num":   7,
+            "cms_field":   PA_FIELD_SOURCE_TYPES[7]["name"],
+            "source_type": "external",
+            "value":       f"{exp_denial:.1%}",
+            "ffs_ref":     "10.9%",
+            "note":        f"Inverse of Field 6.",
+        },
+    ]
+    return pd.DataFrame(rows)
+
+
 def build_cms_field_table(report: pd.DataFrame) -> pd.DataFrame:
     """Build the 7-field CMS-0057-F table with source type badges and benchmarks.
 
