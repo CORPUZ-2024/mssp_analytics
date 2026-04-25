@@ -4,8 +4,8 @@ This repository implements a CMS MSSP County-Level Aggregate Expenditure and Ris
 
 - HCC / RADV risk flag analysis
 - Shared savings and benchmark modeling
-- Prior authorization simulation
-- FHIR data bridge mapping
+- Prior authorization simulation (Schema Simulation ) 
+
 
 ## What is included
 
@@ -46,7 +46,7 @@ The dashboard includes four tabs aligned to the project plan:
 
 - **HCC Risk Flags** — RADV-style exposure scoring and YoY risk score variance
 - **Shared Savings Model** — benchmark construction and savings/loss ratio simulation
-- **PA Metrics Simulation** — synthetic prior authorization metrics using utilization proxies
+- **PA Metrics Simulation** — synthetic prior authorization metrics using utilization proxies (Optional) 
 
 ## Design highlights
 
