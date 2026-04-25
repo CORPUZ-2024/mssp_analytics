@@ -36,6 +36,7 @@ from src.modules.shared_savings_model.reconciliation import build_reconciliation
 from src.modules.pa_metrics_simulation.pa_metrics_report import (
     build_pa_metrics_report,
     build_cms_field_table,
+    build_cms_field_table_from_disclosures,
 )
 
 # ---------------------------------------------------------------------------
@@ -221,7 +222,7 @@ def _state_name_opts(df: pd.DataFrame) -> list[str]:
 # Sidebar — tab-aware filters
 # ---------------------------------------------------------------------------
 
-def render_sidebar(df: pd.DataFrame, active_tab: str) -> dict:
+def render_sidebar(df: pd.DataFrame, active_tab: str) -> tuple[dict, bool]:
     """Render sidebar with tab-specific controls. Returns a dict of filter values."""
 
     def _opts(col: str) -> list:
@@ -230,6 +231,9 @@ def render_sidebar(df: pd.DataFrame, active_tab: str) -> dict:
     filters: dict = {}
 
     with st.sidebar:
+        st.markdown("### Modules")
+        show_pa = st.toggle("Enable Module C — PA metrics", value=False)
+        st.markdown("---")
         st.markdown("### Filters")
 
         # ---- Module A filters ---
@@ -303,7 +307,7 @@ def render_sidebar(df: pd.DataFrame, active_tab: str) -> dict:
             else:
                 st.experimental_rerun()  # type: ignore[attr-defined]
 
-    return filters
+    return filters, show_pa
 
 
 def _render_sidebar_kpis(df: pd.DataFrame, active_tab: str) -> None:
@@ -961,98 +965,166 @@ def render_pa_metrics_tab(df: pd.DataFrame, filters: dict) -> None:
         st.warning("PA metrics simulation produced no output.")
         return
 
+    # ---- Disclosure Data (Real) ----
+    disclosures_path = Path("disclosures_metrics.csv")
+    disclosures_df = pd.DataFrame()
+    if disclosures_path.exists():
+        disclosures_df = pd.read_csv(disclosures_path)
+
     base_approval = float(report["approved_rate"].mean()) if "approved_rate" in report.columns else 0.914
 
     # ---- Source type legend ------------------------------------------------
     st.markdown(
         '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:11px">'
         '<span class="badge-drv" style="padding:2px 8px">derived — MSSP PUF proxy</span>'
-        '<span class="badge-ext" style="padding:2px 8px">external — literature benchmark</span>'
+        '<span class="badge-ext" style="padding:2px 8px">external — payer disclosure (real)</span>'
         '<span class="badge-const" style="padding:2px 8px">constant — CMS regulatory parameter</span>'
         '<span class="badge-sim" style="padding:2px 8px">simulated — modeled estimate</span>'
         '</div>',
         unsafe_allow_html=True,
     )
 
+    if not disclosures_df.empty:
+        st.success(f"Loaded real disclosure metrics for {len(disclosures_df)} payers.")
+
     # ---- Row 1: stacked 100% bar + burden chart ----------------------------
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("**Simulated PA approval / denial · by service type**")
-        st.caption("Stacked 100% bar · fields 2+3 · MSSP specialty utilization proxy · source: derived")
+        if not disclosures_df.empty:
+            st.markdown("**Real Payer Disclosure Metrics (2025)**")
+            st.caption("Approval vs. Denial rates from ingested disclosures · source: external")
+            
+            disc_viz = disclosures_df.copy()
+            disc_viz["Approval rate"] = (disc_viz["approved_requests"] / disc_viz["total_requests"] * 100).round(1)
+            disc_viz["Denial rate"] = (disc_viz["denied_requests"] / disc_viz["total_requests"] * 100).round(1)
+            
+            disc_melt = disc_viz.melt(
+                id_vars="enrollment_type", value_vars=["Approval rate", "Denial rate"],
+                var_name="Metric", value_name="Rate (%)"
+            )
+            fig = px.bar(
+                disc_melt, x="enrollment_type", y="Rate (%)", color="Metric",
+                barmode="stack",
+                color_discrete_map={"Approval rate": "#5DCAA5", "Denial rate": "#F09595"},
+                height=CHART_H,
+                labels={"enrollment_type": "Payer", "Rate (%)": "Rate (%)"},
+            )
+            fig.update_layout(yaxis_range=[0, 100])
+            _apply_layout(fig)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.markdown("**Simulated PA approval / denial · by service type**")
+            st.caption("Stacked 100% bar · fields 2+3 · MSSP specialty utilization proxy · source: derived")
 
-        sel_svc = filters.get("service_type", "All services")
-        svc_df  = _service_type_breakdown(base_approval)
-        if sel_svc != "All services" and sel_svc in svc_df["Service type"].values:
-            svc_df = svc_df[svc_df["Service type"] == sel_svc]
+            sel_svc = filters.get("service_type", "All services")
+            svc_df  = _service_type_breakdown(base_approval)
+            if sel_svc != "All services" and sel_svc in svc_df["Service type"].values:
+                svc_df = svc_df[svc_df["Service type"] == sel_svc]
 
-        svc_melt = svc_df.melt(
-            id_vars="Service type", var_name="Metric", value_name="Rate (%)"
-        )
-        fig = px.bar(
-            svc_melt, x="Service type", y="Rate (%)", color="Metric",
-            barmode="stack",
-            color_discrete_map={"Approval rate": "#5DCAA5", "Denial rate": "#F09595"},
-            height=CHART_H,
-            labels={"Service type": "", "Rate (%)": "Rate (%)"},
-        )
-        fig.update_layout(yaxis_range=[0, 100])
-        _apply_layout(fig)
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            svc_melt = svc_df.melt(
+                id_vars="Service type", var_name="Metric", value_name="Rate (%)"
+            )
+            fig = px.bar(
+                svc_melt, x="Service type", y="Rate (%)", color="Metric",
+                barmode="stack",
+                color_discrete_map={"Approval rate": "#5DCAA5", "Denial rate": "#F09595"},
+                height=CHART_H,
+                labels={"Service type": "", "Rate (%)": "Rate (%)"},
+            )
+            fig.update_layout(yaxis_range=[0, 100])
+            _apply_layout(fig)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     with col2:
-        st.markdown("**Estimated PA burden · admin hours per 1,000 beneficiaries**")
-        st.caption("Based on AMA 13 hr/physician/week benchmark × specialty utilization rate · source: external ref")
-
-        if "total_requests" in report.columns and "county_id" in report.columns:
-            burden = report.copy()
-            burden["admin_hrs_per_1k"] = (
-                burden["denied_rate"].fillna(0) * burden["total_requests"].fillna(0) * 0.013
-            ).round(1)
-            top_burden = (
-                burden.groupby("county_id")["admin_hrs_per_1k"]
-                .mean().nlargest(8).reset_index()
-            )
-            top_burden.columns = ["County", "Admin hrs / 1k ben"]
+        if not disclosures_df.empty:
+            st.markdown("**Expedited vs. Standard Volume**")
+            st.caption("Total request volume from ingested disclosures · source: external")
             fig2 = px.bar(
-                top_burden, x="County", y="Admin hrs / 1k ben",
-                color_discrete_sequence=["#7F77DD"],
+                disclosures_df, x="enrollment_type", y=["total_requests", "expedited_requests"],
+                barmode="group",
+                color_discrete_map={"total_requests": "#7F77DD", "expedited_requests": "#AFA9EC"},
                 height=CHART_H,
-                labels={"County": "", "Admin hrs / 1k ben": "Est. admin hrs / 1,000 ben"},
+                labels={"enrollment_type": "Payer", "value": "Volume", "variable": "Type"},
             )
-            _apply_layout(fig2, showlegend=False)
+            _apply_layout(fig2)
             st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.markdown("**Estimated PA burden · admin hours per 1,000 beneficiaries**")
+            st.caption("Based on AMA 13 hr/physician/week benchmark × specialty utilization rate · source: external ref")
+
+            if "total_requests" in report.columns and "county_id" in report.columns:
+                burden = report.copy()
+                burden["admin_hrs_per_1k"] = (
+                    burden["denied_rate"].fillna(0) * burden["total_requests"].fillna(0) * 0.013
+                ).round(1)
+                top_burden = (
+                    burden.groupby("county_id")["admin_hrs_per_1k"]
+                    .mean().nlargest(8).reset_index()
+                )
+                top_burden.columns = ["County", "Admin hrs / 1k ben"]
+                fig2 = px.bar(
+                    top_burden, x="County", y="Admin hrs / 1k ben",
+                    color_discrete_sequence=["#7F77DD"],
+                    height=CHART_H,
+                    labels={"County": "", "Admin hrs / 1k ben": "Est. admin hrs / 1,000 ben"},
+                )
+                _apply_layout(fig2, showlegend=False)
+                st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
     # ---- Row 2: all 7 CMS fields table with source badges ------------------
-    st.markdown("**All 7 CMS-required PA metric fields — simulated vs. benchmark**")
-    st.caption(
-        "CMS-0057-F public reporting schema · payers must post annually by March 31 · "
-        "drugs excluded per rule · field 4 denominator = denied decisions (not total)"
-    )
-
-    field_table = build_cms_field_table(report)
-    if not field_table.empty:
-        # Render with inline source badges
-        display_rows = []
-        for _, row in field_table.iterrows():
-            badge_html = _source_badge(str(row.get("source_type", "simulated")))
-            display_rows.append({
-                "#":                 int(row["field_num"]),
-                "CMS metric field":  f'{row["cms_field"]} {badge_html}',
-                "Simulated":         row["simulated"],
-                "FFS reference":     row["ffs_ref"],
-                "MA benchmark":      row["ma_ref"],
-                "Variance vs. FFS":  row["variance"],
-                "Flag":              row["flag"],
-            })
-        field_df = pd.DataFrame(display_rows)
-        # Use st.write for HTML column to render badges
-        st.write(
-            field_df.to_html(escape=False, index=False),
-            unsafe_allow_html=True,
+    if not disclosures_df.empty:
+        st.markdown("**Real Payer Disclosure Metrics vs. CMS Benchmarks**")
+        st.caption(
+            "Aggregated metrics from ingested disclosure PDFs · "
+            "source: external (actual payer reported)"
         )
+        field_table = build_cms_field_table_from_disclosures(disclosures_df)
+        if not field_table.empty:
+            display_rows = []
+            for _, row in field_table.iterrows():
+                badge_html = _source_badge(str(row.get("source_type", "external")))
+                display_rows.append({
+                    "#":                 int(row["field_num"]),
+                    "CMS metric field":  f'{row["cms_field"]} {badge_html}',
+                    "Actual (Avg)":      row["value"],
+                    "FFS reference":     row["ffs_ref"],
+                    "Note":              row["note"],
+                })
+            st.write(
+                pd.DataFrame(display_rows).to_html(escape=False, index=False),
+                unsafe_allow_html=True,
+            )
     else:
-        st.caption("Field table unavailable.")
+        st.markdown("**All 7 CMS-required PA metric fields — simulated vs. benchmark**")
+        st.caption(
+            "CMS-0057-F public reporting schema · payers must post annually by March 31 · "
+            "drugs excluded per rule · field 4 denominator = denied decisions (not total)"
+        )
+
+        field_table = build_cms_field_table(report)
+        if not field_table.empty:
+            # Render with inline source badges
+            display_rows = []
+            for _, row in field_table.iterrows():
+                badge_html = _source_badge(str(row.get("source_type", "simulated")))
+                display_rows.append({
+                    "#":                 int(row["field_num"]),
+                    "CMS metric field":  f'{row["cms_field"]} {badge_html}',
+                    "Simulated":         row["simulated"],
+                    "FFS reference":     row["ffs_ref"],
+                    "MA benchmark":      row["ma_ref"],
+                    "Variance vs. FFS":  row["variance"],
+                    "Flag":              row["flag"],
+                })
+            field_df = pd.DataFrame(display_rows)
+            # Use st.write for HTML column to render badges
+            st.write(
+                field_df.to_html(escape=False, index=False),
+                unsafe_allow_html=True,
+            )
+        else:
+            st.caption("Field table unavailable.")
 
     _insight_bar(
         "MSSP-aligned populations show slightly elevated simulated denial rates vs. Medicare FFS "
@@ -1150,7 +1222,7 @@ def main() -> None:
     }.get(active_tab_sel, "hcc")
 
     # Sidebar uses hcc_df for state name options (has 2023+2024 coverage)
-    filters = render_sidebar(hcc_df if tab_key == "hcc" else df, tab_key)
+    filters, show_pa = render_sidebar(hcc_df if tab_key == "hcc" else df, tab_key)
 
     def _apply_filters(src: pd.DataFrame) -> pd.DataFrame:
         out = src.copy()
@@ -1171,7 +1243,13 @@ def main() -> None:
     with tab2:
         render_shared_savings_tab(working_df, filters)
     with tab3:
-        render_pa_metrics_tab(working_df, filters)
+        if show_pa:
+            render_pa_metrics_tab(working_df, filters)
+        else:
+            st.info(
+                "Module C is disabled. Enable it with the toggle in the sidebar "
+                "(**Modules → Enable Module C — PA metrics**)."
+            )
 
 
 if __name__ == "__main__":
