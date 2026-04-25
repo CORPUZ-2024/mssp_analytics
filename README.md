@@ -35,6 +35,10 @@ Launch the app with:
 ```bash
 py -m streamlit run src/app.py
 ```
+Or with 
+```bash: 
+https://msspanalytics.streamlit.app/
+```
 
 > **Windows note:** `streamlit` and `pip` are often not on the system PATH in cmd.exe.
 > Use `py -m streamlit` and `py -m pip` as shown above — these always work regardless of PATH.
