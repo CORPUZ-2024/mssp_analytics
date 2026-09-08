@@ -1,0 +1,119 @@
+{
+  "catalog_url": "https://data.cms.gov/data.json",
+  "dataset_title": "County-level Aggregate Expenditure and Risk Score Data on Assignable Beneficiaries",
+  "fetched_at": "2026-09-08T19:30:54+00:00",
+  "vintages": [
+    {
+      "year": 2025,
+      "data_cut": "OC1",
+      "dataset_id": "7763a2ea-d25d-4061-8e11-f023b6df1c2d",
+      "label": "2025-01-02oc1",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/7763a2ea-d25d-4061-8e11-f023b6df1c2d/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/5ca3dc01-bbbe-47f2-94af-7d5d71b5b194/FFS_Data_for_SSP_CRB_PUF_2025_01_01_Offset_Assignable_2025_2026_Starters_oc1.csv"
+    },
+    {
+      "year": 2025,
+      "data_cut": "FINAL",
+      "dataset_id": "d0919fbf-3841-46c7-bb87-1ff50bd8b734",
+      "label": "2025-01-01",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/d0919fbf-3841-46c7-bb87-1ff50bd8b734/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/90ab6d99-1e6f-46af-9a88-dbbaf1fa7505/FFS_Data_for_SSP_CRB_PUF_2025_01_01_Cal_Year_Assignable_2025_2026_Starters.csv"
+    },
+    {
+      "year": 2024,
+      "data_cut": "OC1",
+      "dataset_id": "b3503c8a-65a0-4a86-a072-15a4bb70a829",
+      "label": "2024-01-05oc1",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/b3503c8a-65a0-4a86-a072-15a4bb70a829/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/7c332c5e-b9cc-4ee1-b245-86d46ddd433b/FFS_Data_for_SSP_CRB_PUF_2024_01_01_Offset_Assignable_2025_2026_Starters_oc1.csv"
+    },
+    {
+      "year": 2024,
+      "data_cut": "FINAL",
+      "dataset_id": "12b934a1-618c-4fe2-91c4-0c9a37414850",
+      "label": "2024-01-04",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/12b934a1-618c-4fe2-91c4-0c9a37414850/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/a100249f-d1ef-458c-8f37-109455dcb82b/FFS_Data_for_SSP_CRB_PUF_2024_01_01_Cal_Year_Assignable_2025_2026_Starters.csv"
+    },
+    {
+      "year": 2023,
+      "data_cut": "OC1",
+      "dataset_id": "adb3ae8f-6baf-4a75-8e1d-a0c9842489f5",
+      "label": "2023-12-07oc1",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/adb3ae8f-6baf-4a75-8e1d-a0c9842489f5/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/728faf2e-e90c-47cb-a470-d928884bc70f/FFS_Data_for_SSP_CRB_PUF_2023_01_01_Offset_Assignable_2024_2026_Starters_oc1.csv"
+    },
+    {
+      "year": 2023,
+      "data_cut": "FINAL",
+      "dataset_id": "e8818a4f-2613-4d79-b66c-69e86956eaa9",
+      "label": "2023-12-06",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/e8818a4f-2613-4d79-b66c-69e86956eaa9/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/da03f9c1-8677-4fac-94e2-0971f17f2ba5/FFS_Data_for_SSP_CRB_PUF_2023_01_01_Cal_Year_Assignable_2024_2026_Starters.csv"
+    },
+    {
+      "year": 2022,
+      "data_cut": "OC2",
+      "dataset_id": "ecdc5c45-ab0e-414d-b558-f5ef7ae09e31",
+      "label": "2022-12-12oc2",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/ecdc5c45-ab0e-414d-b558-f5ef7ae09e31/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/6b3aed37-512e-4f49-9081-fe99e0b8ae6f/FFS_Data_for_SSP_CRB_PUF_2022_01_01_Offset_Assignable_2024_2026_Starters_oc2.csv"
+    },
+    {
+      "year": 2022,
+      "data_cut": "OC1",
+      "dataset_id": "5a14d151-b2cf-484c-905c-272e69fb4395",
+      "label": "2022-12-11oc1",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/5a14d151-b2cf-484c-905c-272e69fb4395/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/4fc810cb-e6f3-498c-af2c-84f7caf034c4/FFS_Data_for_SSP_CRB_PUF_2022_01_01_Cal_Year_Assignable_2024_2026_Starters_oc1.csv"
+    },
+    {
+      "year": 2022,
+      "data_cut": "FINAL",
+      "dataset_id": "418a5f63-7fd5-453d-ac91-5ca7f196ae70",
+      "label": "2022-12-10",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/418a5f63-7fd5-453d-ac91-5ca7f196ae70/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/4001b121-56d0-4605-bf27-ed792f4fd626/FFS_Data_for_SSP_CRB_PUF_2022_01_01_Cal_Year_Assignable_2022_2023_Starters.csv"
+    },
+    {
+      "year": 2021,
+      "data_cut": "OC2",
+      "dataset_id": "0cff0290-90f1-4e8a-b8cd-d09d9da60ebb",
+      "label": "2021-01-10oc2",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/0cff0290-90f1-4e8a-b8cd-d09d9da60ebb/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/97055226-1d95-438c-b26c-8ce797e606fa/FFS_Data_for_SSP_CRB_PUF_2021_01_01_Offset_Assignable_2024_2026_Starters_oc2.csv"
+    },
+    {
+      "year": 2021,
+      "data_cut": "OC1",
+      "dataset_id": "d2bdee03-7c18-4894-a415-2f37a2dbda6f",
+      "label": "2021-01-09oc1",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/d2bdee03-7c18-4894-a415-2f37a2dbda6f/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/4f8244b9-6f56-48d3-8361-2175be5238b0/FFS_Data_for_SSP_CRB_PUF_2021_01_01_Cal_Year_Assignable_2024_2026_Starters_oc1.csv"
+    },
+    {
+      "year": 2021,
+      "data_cut": "FINAL",
+      "dataset_id": "53cc2512-2c98-4c69-8bf4-dcf7c7156156",
+      "label": "2021-01-08",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/53cc2512-2c98-4c69-8bf4-dcf7c7156156/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/cfe0e6dd-a3cf-44b2-83bb-5036d4293c68/FFS_Data_for_SSP_CRB_PUF_2021_01_01_Cal_Year_Assignable_2022_2023_Starters.csv"
+    },
+    {
+      "year": 2020,
+      "data_cut": "FINAL",
+      "dataset_id": "c906b3aa-8b3c-40d5-9392-759f28d9bcb2",
+      "label": "2020-01-04",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/c906b3aa-8b3c-40d5-9392-759f28d9bcb2/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/127e3727-eca4-4f7f-8464-6884913e576f/FFS_Data_for_SSP_CRB_PUF_2020_01_01_Cal_Year_Assignable_2022_2023_Starters.csv"
+    },
+    {
+      "year": 2019,
+      "data_cut": "FINAL",
+      "dataset_id": "1878d362-3fc0-4463-948c-9229c1344667",
+      "label": "2019-01-04",
+      "api_url": "https://data.cms.gov/data-api/v1/dataset/1878d362-3fc0-4463-948c-9229c1344667/data",
+      "csv_url": "https://data.cms.gov/sites/default/files/2026-07/b5cb9814-a655-447b-a3e6-56a1ffffc84c/FFS_Data_for_SSP_CRB_PUF_2019_01_01_Cal_Year_Assignable_2022_2023_Starters.csv"
+    }
+  ]
+}

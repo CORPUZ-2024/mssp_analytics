@@ -24,7 +24,8 @@ if _V(st.__version__) >= _V("1.18"):
 else:
     _cache_data = st.experimental_memo  # type: ignore[attr-defined]
 
-from src.etl.client import CMSSodaClient, DATASET_IDS_BY_YEAR
+from src.etl.catalog import CMSCatalog
+from src.etl.client import fetch_vintages
 from src.etl.enrich import DataEnricher
 from src.etl.ingest import DataIngestor
 from src.modules.hcc_radv_risk_flags.hcc_risk_report import build_hcc_risk_flag_summary
@@ -160,44 +161,42 @@ def _risk_label(score: float, high_q: float, med_q: float) -> str:
 
 @_cache_data(show_spinner=False, ttl=3_600)
 def fetch_puf_data() -> pd.DataFrame:
-    """Fetch the most recent full year (2024) for Modules B and C."""
-    client   = CMSSodaClient()
+    """Fetch the most recent published performance year for Modules B and C.
+
+    The year is discovered from the CMS DCAT catalog rather than hard-coded.
+    Pinning a year is what produced the "No records returned" outage: CMS moved
+    the portal dataset on to the next performance year and the fixed
+    ``start_year=2024, end_year=2024`` filter then matched nothing.
+    """
+    catalog  = CMSCatalog.load()
+    years    = catalog.latest_years(1)
     ingestor = DataIngestor()
     enricher = DataEnricher()
-    raw = client.fetch_to_dataframe(start_year=2024, end_year=2024)
+    raw = fetch_vintages(catalog, [(years[0], "FINAL")], required=True)
     if raw.empty:
         return raw
-    df = ingestor.process_dataframe(raw)
-    df = enricher.enrich(df)
-    return df
+    return enricher.enrich(ingestor.process_dataframe(raw))
 
 
 @_cache_data(show_spinner=False, ttl=3_600)
 def fetch_hcc_multi_year_data() -> pd.DataFrame:
-    """Fetch 2023 + 2024 data for Module A — required for YoY delta calculation.
+    """Fetch the two most recent performance years for Module A YoY delta.
 
-    Each performance year is a separate CMS dataset ID.  The single-dataset
-    fetch_to_dataframe() only returns one year; we union year-specific fetches here.
-    Dataset IDs discovered from https://data.cms.gov/data.json catalog.
+    Each performance year is a separate CMS dataset whose UUID rotates, so both
+    the years and the endpoints are resolved from the CMS DCAT catalog at call
+    time rather than read from a constant.
     """
+    catalog  = CMSCatalog.load()
     ingestor = DataIngestor()
     enricher = DataEnricher()
 
-    frames: list[pd.DataFrame] = []
-    for year in (2023, 2024):
-        dataset_id = DATASET_IDS_BY_YEAR.get(year)
-        if not dataset_id:
-            continue
-        client = CMSSodaClient(dataset_id=dataset_id)
-        raw = client.fetch_to_dataframe()
-        if raw.empty:
-            continue
-        frames.append(raw)
-
-    if not frames:
+    years = catalog.latest_years(2)
+    if not years:
         return pd.DataFrame()
 
-    combined = pd.concat(frames, ignore_index=True)
+    combined = fetch_vintages(catalog, [(y, "FINAL") for y in years], required=False)
+    if combined.empty:
+        return pd.DataFrame()
     df = ingestor.process_dataframe(combined)
     df = enricher.enrich(df)
     return df
@@ -391,12 +390,12 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
         and summary["risk_score_yoy_delta"].notna().any()
     )
     x_col   = "risk_score_yoy_delta" if has_yoy else "avg_risk_score"
-    x_label = "YoY risk score delta" if has_yoy else "Risk score (2024)"
+    x_label = "YoY risk score delta" if has_yoy else "Risk score (latest year)"
 
     if not has_yoy:
         st.info(
             "Year-over-year delta unavailable for the current filter selection. "
-            "Showing absolute 2024 risk score — try removing state/enrollment filters."
+            "Showing the absolute latest-year risk score — try removing state/enrollment filters."
         )
 
     delta_threshold = filters.get("delta_threshold", 0.0)
@@ -412,12 +411,12 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
     col1, col2 = st.columns(2)
 
     with col1:
-        hist_title = "Risk score YoY delta distribution" if has_yoy else "Risk score distribution (2024)"
+        hist_title = "Risk score YoY delta distribution" if has_yoy else "Risk score distribution (latest year)"
         st.markdown(f"**{hist_title}**")
         st.caption(
             "AVG_RISK_SCORE delta by county · flagged above threshold · source: derived"
             if has_yoy else
-            "2024 performance year · YoY unavailable for current filter · source: derived"
+            "Latest performance year · YoY unavailable for current filter · source: derived"
         )
         hist_data = summary[x_col].dropna()
         if not hist_data.empty:
@@ -463,7 +462,7 @@ def render_hcc_tab(df: pd.DataFrame, filters: dict) -> None:
                               yaxis_title="Counties",
                               xaxis_title="Risk score band",
                               height=320)
-                st.caption(f"n={len(hist_data):,} counties · 2024 PY · bars show count per RAF band")
+                st.caption(f"n={len(hist_data):,} counties · latest PY · bars show count per RAF band")
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         else:
             st.caption("No data available.")
@@ -1149,7 +1148,7 @@ def main() -> None:
           <div>
             <div style="font-size:16px;font-weight:600">CORPUZ-2024 / mssp_analytics</div>
             <div style="font-size:11px;opacity:0.55;margin-top:2px">
-              CMS MSSP County-Level Analytics &middot; v5 spec &middot; PY2023–2024 &middot; Modules A · B · C
+              CMS MSSP County-Level Analytics &middot; v5 spec &middot; latest two performance years &middot; Modules A · B · C
             </div>
           </div>
           <div style="display:flex;gap:6px">
@@ -1167,7 +1166,7 @@ def main() -> None:
 
     # --- Load data ---
     if "puf_df" not in st.session_state:
-        with st.spinner("Loading 2024 MSSP PUF data from CMS API…"):
+        with st.spinner("Loading the latest MSSP PUF year from the CMS API…"):
             try:
                 st.session_state["puf_df"] = fetch_puf_data()
             except Exception as exc:
@@ -1175,7 +1174,7 @@ def main() -> None:
                 st.stop()
 
     if "hcc_df" not in st.session_state:
-        with st.spinner("Loading PY2023 + PY2024 MSSP PUF data for Module A YoY delta…"):
+        with st.spinner("Loading the two most recent MSSP PUF years for Module A YoY delta…"):
             try:
                 hcc = fetch_hcc_multi_year_data()
                 # Validate that multi-year fetch actually returned both years
@@ -1185,7 +1184,7 @@ def main() -> None:
                     hcc = fetch_hcc_multi_year_data()
                 st.session_state["hcc_df"] = hcc
             except Exception as exc:
-                st.warning(f"Could not load 2023 data for YoY delta: {exc}. Falling back to 2024 only.")
+                st.warning(f"Could not load the prior year for YoY delta: {exc}. Falling back to the latest year only.")
                 st.session_state["hcc_df"] = st.session_state.get("puf_df", pd.DataFrame())
 
     df     = st.session_state["puf_df"]    # 2024 only — Modules B + C

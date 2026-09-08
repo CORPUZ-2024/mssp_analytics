@@ -1,34 +1,36 @@
 from __future__ import annotations
 
+"""HTTP client for the CMS Data API v1 (data.cms.gov).
+
+Dataset UUIDs are **not** hard-coded here any more.  They are resolved at call
+time from the DCAT catalog (see ``src/etl/catalog.py``), because CMS retires and
+re-points UUIDs between publications.  Two guards are layered on top:
+
+* **Retry with backoff** for transient 5xx / connection errors.
+* **Year assertion** -- every fetch verifies that the rows CMS returned actually
+  carry the performance year that was asked for.  The original outage was a
+  *silent* content swap (a UUID that used to serve PY2024 began serving PY2025),
+  which no HTTP status code would have caught.
+"""
+
 import logging
+import time
 from typing import Any
 
 import pandas as pd
 import requests
 
+from .catalog import CMSCatalog, Vintage
+
 logger = logging.getLogger(__name__)
 
-# CMS MSSP County-Level Aggregate Expenditure & Risk Score PUF
-# New CMS Data API v1 (replaces retired Socrata endpoint 7c34-eaqd)
-# https://data.cms.gov/medicare-shared-savings-program/
-#   county-level-aggregate-expenditure-and-risk-score-data-on-assignable-beneficiaries
-#
-# Year-specific dataset IDs (Cal Year, 2024–2026 Starters cohort).
-# Discovered via https://data.cms.gov/data.json catalog (2025-04-18).
-# The default portal entry (5f9f1216…) exposes the current PY2024 data;
-# prior years require separate dataset IDs.
-DATASET_IDS_BY_YEAR: dict[int, str] = {
-    2024: "5f9f1216-6fd9-455d-bfbc-0efade687a4e",   # portal default (PY2024 Cal Year)
-    2023: "ebd74cd0-1b92-4406-b8b6-8fa13c57a218",   # PY2023 Cal Year, 2024–2026 Starters
-    2022: "ea87ac44-6dcf-48ad-8c59-210d6799fad0",   # PY2022 Cal Year, 2024–2026 Starters
-}
-
-DEFAULT_DATASET_ID = DATASET_IDS_BY_YEAR[2024]
 _API_BASE = "https://data.cms.gov/data-api/v1/dataset"
-_DEFAULT_PAGE_SIZE = 1_000
-_REQUEST_TIMEOUT = 60
+_DEFAULT_PAGE_SIZE = 5_000
+_REQUEST_TIMEOUT = 90
+_MAX_RETRIES = 4
+_BACKOFF_BASE = 1.5
 
-# Wide-format suffix → enrollment_type label
+# Wide-format suffix -> enrollment_type label
 _ENROLLMENT_SUFFIX_MAP: dict[str, str] = {
     "ESRD": "ESRD",
     "DIS": "Disabled",
@@ -36,37 +38,55 @@ _ENROLLMENT_SUFFIX_MAP: dict[str, str] = {
     "AGND": "Aged Non-Dual",
 }
 
-# Columns that identify a county/year combination (not per-enrollment-type)
+# Columns identifying a county/year combination (not per-enrollment-type)
 _ID_COLS = ["YEAR", "STATE_NAME", "COUNTY_NAME", "STATE_ID", "COUNTY_ID"]
 
 # Metric column prefixes in the wide format
 _METRIC_PREFIXES = ["PER_CAPITA_EXP", "AVG_RISK_SCORE", "AVG_DEMOG_SCORE", "PERSON_YEARS"]
 
 
-class CMSSodaClient:
-    """Client for the CMS Data API v1 (data.cms.gov).
+class UpstreamDataError(RuntimeError):
+    """Raised when CMS responds successfully but with unusable content."""
 
-    The default dataset is the MSSP county-level PUF.  The CMS Data API v1
-    returns data in **wide format** (one row per county, with per-enrollment-type
-    metrics as separate columns). ``fetch_to_dataframe`` automatically reshapes
-    the response to **long format** so downstream code sees one row per
-    county × enrollment-type combination — matching the expected schema.
+
+class CMSDataClient:
+    """Client for one resolved vintage of the CMS MSSP county-level PUF.
+
+    The CMS Data API v1 returns **wide** rows (one per county, with
+    per-enrollment-type metrics as separate columns).  ``fetch_to_dataframe``
+    reshapes to **long** format so downstream code sees one row per
+    county x enrollment-type, and stamps ``year`` / ``data_cut`` / ``dataset_id``
+    provenance columns onto every row.
 
     Example::
 
-        client = CMSSodaClient()
-        df = client.fetch_to_dataframe(start_year=2024, end_year=2024)
+        catalog = CMSCatalog.load()
+        client  = CMSDataClient.for_vintage(catalog.vintage(2025, "FINAL"))
+        df      = client.fetch_to_dataframe()
     """
 
     def __init__(
         self,
-        dataset_id: str = DEFAULT_DATASET_ID,
+        dataset_id: str,
+        expected_year: int | None = None,
+        data_cut: str = "FINAL",
         app_token: str | None = None,
         base_url: str = _API_BASE,
     ) -> None:
         self.dataset_id = dataset_id
+        self.expected_year = expected_year
+        self.data_cut = data_cut.upper()
         self.app_token = app_token
         self.base_url = base_url.rstrip("/")
+
+    @classmethod
+    def for_vintage(cls, vintage: Vintage, app_token: str | None = None) -> "CMSDataClient":
+        return cls(
+            dataset_id=vintage.dataset_id,
+            expected_year=vintage.year,
+            data_cut=vintage.data_cut,
+            app_token=app_token,
+        )
 
     @property
     def _endpoint(self) -> str:
@@ -76,35 +96,48 @@ class CMSSodaClient:
     # Public API
     # ------------------------------------------------------------------
 
-    def fetch_page(
-        self,
-        limit: int = _DEFAULT_PAGE_SIZE,
-        offset: int = 0,
-    ) -> list[dict[str, Any]]:
-        """Fetch a single page of raw (wide-format) records."""
+    def fetch_page(self, limit: int = _DEFAULT_PAGE_SIZE, offset: int = 0) -> list[dict[str, Any]]:
+        """Fetch one page of raw wide-format records, retrying transient failures."""
         params: dict[str, Any] = {"size": limit, "offset": offset}
         headers: dict[str, str] = {}
         if self.app_token:
             headers["X-App-Token"] = self.app_token
 
-        logger.debug("CMS API request: %s  params=%s", self._endpoint, params)
-        response = requests.get(
-            self._endpoint, params=params, headers=headers, timeout=_REQUEST_TIMEOUT
-        )
-        response.raise_for_status()
-        records: list[dict[str, Any]] = response.json()
-        logger.info(
-            "Fetched %d records from dataset %s (offset=%d).",
-            len(records),
-            self.dataset_id,
-            offset,
-        )
-        return records
+        last_error: Exception | None = None
+        for attempt in range(_MAX_RETRIES):
+            try:
+                response = requests.get(
+                    self._endpoint, params=params, headers=headers, timeout=_REQUEST_TIMEOUT
+                )
+                # 4xx means the dataset id is wrong or retired -- retrying cannot
+                # help, and the caller needs to re-resolve the catalog.
+                if 400 <= response.status_code < 500:
+                    response.raise_for_status()
+                response.raise_for_status()
+                return response.json()
+            except requests.HTTPError as exc:
+                status = exc.response.status_code if exc.response is not None else 0
+                if 400 <= status < 500:
+                    raise
+                last_error = exc
+            except (requests.ConnectionError, requests.Timeout, ValueError) as exc:
+                last_error = exc
 
-    def fetch_all(
-        self,
-        page_size: int = _DEFAULT_PAGE_SIZE,
-    ) -> list[dict[str, Any]]:
+            sleep_for = _BACKOFF_BASE ** attempt
+            logger.warning(
+                "CMS API request failed (attempt %d/%d): %s. Retrying in %.1fs.",
+                attempt + 1,
+                _MAX_RETRIES,
+                last_error,
+                sleep_for,
+            )
+            time.sleep(sleep_for)
+
+        raise UpstreamDataError(
+            f"CMS API request to {self._endpoint} failed after {_MAX_RETRIES} attempts: {last_error}"
+        )
+
+    def fetch_all(self, page_size: int = _DEFAULT_PAGE_SIZE) -> list[dict[str, Any]]:
         """Paginate through the full dataset and return all raw wide-format records."""
         all_records: list[dict[str, Any]] = []
         offset = 0
@@ -115,69 +148,61 @@ class CMSSodaClient:
                 break
             offset += page_size
         logger.info(
-            "Completed full fetch: %d total records from dataset %s.",
+            "Fetched %d records for %s cut %s (dataset %s).",
             len(all_records),
+            self.expected_year,
+            self.data_cut,
             self.dataset_id,
         )
         return all_records
 
-    def fetch_to_dataframe(
-        self,
-        page_size: int = _DEFAULT_PAGE_SIZE,
-        start_year: int | str | None = None,
-        end_year: int | str | None = None,
-        # Legacy SODA-style parameters accepted but ignored (API no longer SODA)
-        where: str | None = None,
-        **filters: Any,
-    ) -> pd.DataFrame:
-        """Return all matching records as a long-format pandas DataFrame.
-
-        Fetches all data from the API, reshapes from wide to long format
-        (one row per county × enrollment-type), then applies optional year
-        range filtering in Python.
-
-        Args:
-            start_year: Earliest performance year to include (inclusive).
-            end_year:   Latest performance year to include (inclusive).
-            where:      Ignored — accepted for backward compatibility only.
-            **filters:  Ignored — accepted for backward compatibility only.
-        """
+    def fetch_to_dataframe(self, page_size: int = _DEFAULT_PAGE_SIZE) -> pd.DataFrame:
+        """Return the vintage as a long-format dataframe with provenance columns."""
         records = self.fetch_all(page_size=page_size)
         df = pd.DataFrame(records)
         if df.empty:
-            return df
+            raise UpstreamDataError(
+                f"CMS returned zero rows for dataset {self.dataset_id} "
+                f"({self.expected_year} {self.data_cut})."
+            )
 
-        df = self._reshape_wide_to_long(df)
-        df["dataset_id"] = self.dataset_id
+        self._assert_expected_year(df)
 
-        # Year range filter applied in Python (API does not support server-side filtering)
-        if "YEAR" in df.columns:
-            yr = df["YEAR"].astype(str)
-            if start_year is not None:
-                df = df[yr >= str(start_year)]
-            if end_year is not None:
-                df = df[yr <= str(end_year)]
-
-        return df.reset_index(drop=True)
-
-    def row_count(self, **filters: Any) -> int:
-        """Return -1 (count endpoint not available on CMS Data API v1)."""
-        logger.warning("row_count() is not supported on CMS Data API v1; returning -1.")
-        return -1
+        long_df = self._reshape_wide_to_long(df)
+        long_df["dataset_id"] = self.dataset_id
+        long_df["data_cut"] = self.data_cut
+        return long_df.reset_index(drop=True)
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
+    def _assert_expected_year(self, df: pd.DataFrame) -> None:
+        """Fail loudly when CMS serves a different performance year than requested.
+
+        This is the guard that turns the original silent failure into a build
+        error: a UUID that quietly starts serving a different year is caught
+        here rather than producing an empty dashboard.
+        """
+        if self.expected_year is None or "YEAR" not in df.columns:
+            return
+        years = set(df["YEAR"].astype(str).str.strip().unique())
+        expected = str(self.expected_year)
+        if years != {expected}:
+            raise UpstreamDataError(
+                f"Dataset {self.dataset_id} was resolved as performance year "
+                f"{expected} ({self.data_cut}) but returned year(s) {sorted(years)}. "
+                "The CMS catalog mapping has changed -- re-resolve before trusting this build."
+            )
+
     @staticmethod
     def _reshape_wide_to_long(df: pd.DataFrame) -> pd.DataFrame:
-        """Reshape the wide CMS API response to long format.
+        """Reshape the wide CMS response into one row per county x enrollment type.
 
         Input:  one row per county, with per-enrollment-type metric columns
-                (e.g. PER_CAPITA_EXP_ESRD, AVG_RISK_SCORE_DIS, …).
-        Output: four rows per county (one per enrollment type) with standard
-                metric columns: per_capita_exp, avg_risk_score, avg_demog_score,
-                person_years.
+                (PER_CAPITA_EXP_ESRD, AVG_RISK_SCORE_DIS, ...).
+        Output: four rows per county with standard metric columns
+                (per_capita_exp, avg_risk_score, avg_demog_score, person_years).
         """
         id_cols = [c for c in _ID_COLS if c in df.columns]
         frames: list[pd.DataFrame] = []
@@ -187,9 +212,81 @@ class CMSSodaClient:
             sub["enrollment_type"] = label
             for prefix in _METRIC_PREFIXES:
                 src = f"{prefix}_{suffix}"
-                dst = prefix.lower()
                 if src in df.columns:
-                    sub[dst] = df[src].values
+                    sub[prefix.lower()] = df[src].values
             frames.append(sub)
 
         return pd.concat(frames, ignore_index=True)
+
+
+def fetch_vintages(
+    catalog: CMSCatalog,
+    requests_: list[tuple[int, str]],
+    app_token: str | None = None,
+    required: bool = False,
+) -> pd.DataFrame:
+    """Fetch several (year, data_cut) vintages and concatenate them.
+
+    Args:
+        catalog:   Resolved CMS catalog.
+        requests_: ``[(2025, "FINAL"), (2025, "OC1"), ...]``.
+        app_token: Optional CMS API token.
+        required:  When ``True`` any single failure aborts.  When ``False``
+                   (the default) a failed vintage is logged and skipped, so an
+                   optional cut going missing upstream degrades one chart
+                   instead of the whole build.
+
+    Returns:
+        Long-format dataframe with ``year``/``data_cut``/``dataset_id`` columns.
+    """
+    frames: list[pd.DataFrame] = []
+    for year, cut in requests_:
+        vintage = catalog.vintage(year, cut)
+        if vintage is None:
+            message = f"No {cut} vintage published for {year}."
+            if required:
+                raise UpstreamDataError(message)
+            logger.warning("%s Skipping.", message)
+            continue
+        try:
+            frames.append(CMSDataClient.for_vintage(vintage, app_token).fetch_to_dataframe())
+        except Exception as exc:  # noqa: BLE001 - one bad cut must not kill the build
+            if required:
+                raise
+            logger.warning("Could not fetch %s %s (%s). Skipping.", year, cut, exc)
+
+    if not frames:
+        raise UpstreamDataError("No vintages could be fetched from CMS.")
+    return pd.concat(frames, ignore_index=True)
+
+
+# ---------------------------------------------------------------------------
+# Backwards compatibility
+# ---------------------------------------------------------------------------
+
+class CMSSodaClient(CMSDataClient):
+    """Deprecated alias kept so older callers keep importing successfully.
+
+    The CMS endpoint has not been SODA since the Socrata retirement, and the
+    class no longer accepts a hard-coded default dataset id -- resolve one from
+    :class:`~src.etl.catalog.CMSCatalog` instead.
+    """
+
+    def __init__(self, dataset_id: str | None = None, **kwargs: Any) -> None:
+        if dataset_id is None:
+            catalog = CMSCatalog.load()
+            latest = catalog.latest_years(1)
+            if not latest:
+                raise UpstreamDataError("Catalog contains no FINAL vintage.")
+            vintage = catalog.vintage(latest[0], "FINAL")
+            assert vintage is not None
+            logger.warning(
+                "CMSSodaClient instantiated without a dataset id; resolved latest "
+                "FINAL vintage %s. Prefer CMSDataClient.for_vintage().",
+                vintage.key,
+            )
+            dataset_id = vintage.dataset_id
+            kwargs.setdefault("expected_year", vintage.year)
+            kwargs.setdefault("data_cut", vintage.data_cut)
+        kwargs.pop("base_url", None)
+        super().__init__(dataset_id=dataset_id, **kwargs)

@@ -1,0 +1,6 @@
+# Dependencies for the static site build (src/build_site.py) only.
+# Deliberately excludes Streamlit and Plotly: CI renders no charts, it only
+# produces the JSON payloads that docs/ reads. Keeping this list small keeps
+# the scheduled refresh fast and reduces the surface that can break a build.
+pandas>=2.0.0
+requests>=2.31

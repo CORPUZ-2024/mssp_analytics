@@ -1,0 +1,60 @@
+# Publish docs/ to GitHub Pages.
+#
+# Deliberately decoupled from the CMS refresh: this job only copies files that
+# are already committed. It has no network dependency on data.cms.gov, so a
+# deploy can never fail because an upstream API moved.
+name: Deploy Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fail the deploy rather than publish a page whose data files are missing
+      # or malformed -- a 404 on counties.json would render an empty dashboard.
+      - name: Verify the payload is present and parseable
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          required = ["manifest.json", "counties.json", "oc_stability.json", "reference.json"]
+          data = pathlib.Path("docs/data")
+          missing = [f for f in required if not (data / f).exists()]
+          if missing:
+              sys.exit(f"Missing payload files: {missing}")
+          for name in required:
+              json.loads((data / name).read_text(encoding="utf-8"))
+          manifest = json.loads((data / "manifest.json").read_text(encoding="utf-8"))
+          if manifest.get("county_rows", 0) < 8000:
+              sys.exit(f"Payload has only {manifest.get('county_rows')} county rows.")
+          print(f"Payload OK: PY{manifest['latest_year']}, {manifest['county_rows']:,} rows.")
+          PY
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

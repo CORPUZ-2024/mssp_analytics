@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CMS MSSP County-Level Analytics</title>
+<meta name="description" content="County-level MSSP expenditure and risk score analytics: RADV exposure flags, shared savings modelling, and CMS-0057-F prior authorization metrics.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.35.2/plotly.min.js"></script>
+<style>
+/* ------------------------------------------------------------------ *
+ * Design tokens. Light is the base; dark is a selected set of steps,
+ * declared under both the OS media query and the explicit theme stamp
+ * so a manual toggle wins in either direction.
+ * ------------------------------------------------------------------ */
+:root {
+  color-scheme: light;
+  --surface-1:      #fcfcfb;
+  --plane:          #f9f9f7;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #898781;
+  --grid:           #e1e0d9;
+  --axis:           #c3c2b7;
+  --border:         rgba(11,11,11,0.10);
+  --wash:           rgba(11,11,11,0.035);
+
+  /* Categorical - fixed order, never cycled */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+
+  /* Ordinal (RADV exposure Low -> High): one hue, monotone lightness */
+  --ord-1: #86b6ef;
+  --ord-2: #3987e5;
+  --ord-3: #184f95;
+
+  /* Diverging: blue arm <- neutral -> red arm */
+  --div-neg-3: #1c5cab;
+  --div-neg-2: #2a78d6;
+  --div-neg-1: #86b6ef;
+  --div-mid:   #c3c2b7;
+  --div-pos-1: #e99392;
+  --div-pos-2: #e34948;
+  --div-pos-3: #b02f2f;
+  --div-pos-4: #7d1f1f;
+
+  --ok:   #0ca30c;
+  --warn: #fab219;
+  --crit: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --plane:          #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --grid:           #2c2c2a;
+    --axis:           #383835;
+    --border:         rgba(255,255,255,0.10);
+    --wash:           rgba(255,255,255,0.05);
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --div-neg-3: #1c5cab; --div-neg-2: #3987e5; --div-neg-1: #9ec5f4; --div-mid: #383835;
+    --div-pos-1: #f0a09f; --div-pos-2: #e66767; --div-pos-3: #d03b3b; --div-pos-4: #a82e2e;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1:      #1a1a19;
+  --plane:          #0d0d0d;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --grid:           #2c2c2a;
+  --axis:           #383835;
+  --border:         rgba(255,255,255,0.10);
+  --wash:           rgba(255,255,255,0.05);
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --div-neg-3: #1c5cab; --div-neg-2: #3987e5; --div-neg-1: #9ec5f4; --div-mid: #383835;
+  --div-pos-1: #f0a09f; --div-pos-2: #e66767; --div-pos-3: #d03b3b; --div-pos-4: #a82e2e;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--plane);
+  color: var(--text-primary);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+a { color: var(--series-1); }
+
+/* ---------------- Layout ---------------- */
+.masthead {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+.masthead h1 { font-size: 16px; font-weight: 600; margin: 0; }
+.masthead .sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.pill {
+  font-size: 10px; font-weight: 500; padding: 2px 10px; border-radius: 99px;
+  border: 1px solid var(--border); color: var(--text-secondary); white-space: nowrap;
+}
+.pill-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+button.pill { background: none; cursor: pointer; font-family: inherit; }
+
+.shell { display: flex; align-items: flex-start; gap: 0; }
+.sidebar {
+  width: 250px; flex: 0 0 250px; padding: 18px 16px 40px;
+  border-right: 1px solid var(--border); background: var(--surface-1);
+  position: sticky; top: 0; max-height: 100vh; overflow-y: auto;
+}
+main { flex: 1 1 auto; min-width: 0; padding: 18px 24px 60px; }
+
+.sb-head {
+  font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-muted); margin: 18px 0 8px;
+}
+.sb-head:first-child { margin-top: 0; }
+.field { margin-bottom: 12px; }
+.field label {
+  display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;
+}
+select, input[type=range] {
+  width: 100%; font: inherit; font-size: 12px; color: var(--text-primary);
+  background: var(--plane); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 7px;
+}
+input[type=range] { padding: 0; accent-color: var(--series-1); }
+.switch { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+
+.kpi {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; margin-bottom: 8px; background: var(--wash);
+}
+.kpi .k-label { font-size: 10px; color: var(--text-muted); }
+.kpi .k-val   { font-size: 22px; font-weight: 500; line-height: 1.2; }
+.kpi .k-sub   { font-size: 10px; color: var(--text-muted); }
+
+/* ---------------- Provenance banner ---------------- */
+.provenance {
+  border: 1px solid var(--border); border-left: 3px solid var(--series-3);
+  border-radius: 0 8px 8px 0; background: var(--surface-1);
+  padding: 10px 14px; margin-bottom: 18px; font-size: 11.5px; color: var(--text-secondary);
+}
+.provenance.stale { border-left-color: var(--warn); }
+.provenance.error { border-left-color: var(--crit); }
+.provenance b { color: var(--text-primary); }
+.provenance details { margin-top: 6px; }
+.provenance summary { cursor: pointer; color: var(--text-muted); font-size: 11px; }
+.provenance table { margin-top: 6px; font-size: 11px; }
+
+/* ---------------- Tabs ---------------- */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+.tab {
+  font: inherit; font-size: 12.5px; background: none; border: 0; cursor: pointer;
+  padding: 9px 14px; color: var(--text-secondary);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tab[aria-selected="true"] { color: var(--text-primary); border-bottom-color: var(--series-1); font-weight: 500; }
+
+/* ---------------- Panels & charts ---------------- */
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+.card {
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px 10px; margin-bottom: 18px;
+}
+.card h2 { font-size: 13px; font-weight: 600; margin: 0 0 3px; }
+.card .cap { font-size: 11px; color: var(--text-muted); margin: 0 0 10px; }
+.card .foot { font-size: 10.5px; color: var(--text-muted); margin: 6px 0 0; }
+.chart { width: 100%; height: 300px; }
+.chart.short { height: 250px; }
+
+.formula {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", monospace; font-size: 11.5px;
+  background: var(--wash); border: 1px solid var(--border);
+  border-radius: 6px; padding: 9px 12px; margin-bottom: 10px; line-height: 1.7;
+}
+.formula .note { font-family: inherit; font-size: 10.5px; color: var(--text-muted); }
+
+.insight {
+  border-left: 3px solid var(--series-1); background: var(--wash);
+  border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 4px;
+}
+.insight.green { border-left-color: var(--series-3); }
+.insight.amber { border-left-color: var(--series-2); }
+.insight .lbl {
+  font-size: 10px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px;
+}
+.insight p { font-size: 12px; line-height: 1.65; margin: 0; color: var(--text-secondary); }
+
+/* ---------------- Tables ---------------- */
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+th, td {
+  text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--grid);
+  white-space: nowrap;
+}
+th { color: var(--text-muted); font-weight: 600; font-size: 10.5px;
+     text-transform: uppercase; letter-spacing: .04em; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--wash); }
+
+.badge {
+  display: inline-block; font-size: 9.5px; font-weight: 600;
+  padding: 1px 7px; border-radius: 99px; margin-left: 4px;
+  border: 1px solid var(--border); color: var(--text-secondary);
+}
+.badge.derived  { border-color: var(--series-3); color: var(--series-3); }
+.badge.external { border-color: var(--series-2); color: var(--series-2); }
+.badge.constant { border-color: var(--series-1); color: var(--series-1); }
+.dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:-1px; }
+.legend-inline { display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--text-secondary); margin-bottom:8px; }
+
+.empty { font-size: 12px; color: var(--text-muted); padding: 24px 0; text-align: center; }
+
+@media (max-width: 900px) {
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; flex: 1 1 auto; position: static; max-height: none;
+             border-right: 0; border-bottom: 1px solid var(--border); }
+  .grid2 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div>
+    <h1>CORPUZ-2024 / mssp_analytics</h1>
+    <div class="sub">CMS MSSP County-Level Analytics &middot; v5 spec &middot; Modules A &middot; B &middot; C</div>
+  </div>
+  <div class="pill-row">
+    <span class="pill" id="pill-year">&mdash;</span>
+    <a class="pill" href="https://github.com/CORPUZ-2024/mssp_analytics">github</a>
+    <button class="pill" id="theme-toggle" type="button">theme</button>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sb-head">Modules</div>
+    <label class="switch"><input type="checkbox" id="f-module-c"> Enable Module C &mdash; PA metrics</label>
+
+    <div class="sb-head">Filters</div>
+    <div class="field"><label for="f-state">State</label><select id="f-state"></select></div>
+    <div class="field"><label for="f-enroll">Enrollment type</label><select id="f-enroll"></select></div>
+
+    <div id="filters-a">
+      <div class="field">
+        <label for="f-threshold">Min YoY delta threshold: <span id="f-threshold-val">0%</span></label>
+        <input type="range" id="f-threshold" min="0" max="20" step="1" value="0">
+      </div>
+    </div>
+
+    <div id="filters-b" hidden>
+      <div class="field"><label for="f-track">MSSP track</label>
+        <select id="f-track">
+          <option value="A">Track A (upside only)</option>
+          <option value="B">Track B</option>
+          <option value="ENHANCED">ENHANCED</option>
+        </select>
+      </div>
+      <div class="field"><label for="f-raf">RAF band</label>
+        <select id="f-raf">
+          <option>All bands</option><option>0.70&ndash;0.85</option><option>0.86&ndash;1.00</option>
+          <option>1.01&ndash;1.20</option><option>1.21&ndash;1.50</option><option>1.51+</option>
+        </select>
+      </div>
+      <div class="field"><label for="f-v28">V28 adjustment</label>
+        <select id="f-v28"><option>Show both</option><option>V24 only</option><option>V28 adjusted</option></select>
+      </div>
+    </div>
+
+    <div id="filters-c" hidden>
+      <div class="field"><label for="f-service">Service type</label>
+        <select id="f-service">
+          <option>All services</option><option>Cardiology</option><option>Ortho</option>
+          <option>Oncology</option><option>Neurology</option><option>Behavioral</option>
+          <option>Post-acute</option><option>DME</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sb-head">Summary</div>
+    <div id="sidebar-kpis"></div>
+
+    <div class="kpi">
+      <div class="k-label">Records in view</div>
+      <div class="k-val" id="kpi-records">&mdash;</div>
+      <div class="k-sub" id="kpi-records-sub">county &times; enrollment rows</div>
+    </div>
+  </aside>
+
+  <main>
+    <div id="provenance" class="provenance">Loading build manifest&hellip;</div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-a" aria-selected="true" aria-controls="panel-a">A &mdash; HCC &amp; RADV risk flags</button>
+      <button class="tab" role="tab" id="tab-b" aria-selected="false" aria-controls="panel-b">B &mdash; Shared savings model</button>
+      <button class="tab" role="tab" id="tab-c" aria-selected="false" aria-controls="panel-c">C &mdash; PA metrics (CMS-0057-F)</button>
+    </div>
+
+    <!-- ============================ MODULE A ============================ -->
+    <section id="panel-a" role="tabpanel" aria-labelledby="tab-a">
+      <div class="grid2">
+        <div class="card">
+          <h2 id="a-hist-title">Risk score YoY delta distribution</h2>
+          <p class="cap" id="a-hist-cap">AVG_RISK_SCORE delta by county &middot; source: derived</p>
+          <div class="chart" id="chart-a-hist"></div>
+          <p class="foot" id="a-hist-foot"></p>
+        </div>
+        <div class="card">
+          <h2>Risk score growth vs. expenditure efficiency ratio</h2>
+          <p class="cap">X: YoY delta (%) &middot; Y: PER_CAPITA_EXP / AVG_RISK_SCORE ($/unit) &middot; source: derived</p>
+          <div class="legend-inline" id="a-scatter-legend"></div>
+          <div class="chart" id="chart-a-scatter"></div>
+          <p class="foot" id="a-scatter-foot"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>OC-cut stability &mdash; risk score across data cuts</h2>
+        <p class="cap" id="a-oc-cap">Operational cut &rarr; Final &middot; a large cut-to-final delta is a late-coding pattern (single-source HCC proxy) &middot; source: derived</p>
+        <div class="chart" id="chart-a-oc"></div>
+        <p class="foot" id="a-oc-foot"></p>
+      </div>
+
+      <div class="card">
+        <h2>Top flagged counties &mdash; RADV risk composite ranking</h2>
+        <div class="formula">
+          Composite_score = <b>0.4</b> &times; YoY_delta + <b>0.4</b> &times; Exp_growth_ratio + <b>0.2</b> &times; V28_coding_exposure_index<br>
+          <span class="note">Illustrative weights &mdash; pending empirical validation against RADV audit outcome data.
+          Sensitivity: test 0.5/0.3/0.2 and 0.33/0.33/0.33 per v5 spec.</span>
+        </div>
+        <div class="tw"><table id="table-a"><thead></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="insight green">
+        <div class="lbl">Key finding</div>
+        <p>Counties with YoY risk score growth &gt;10% AND expenditure growth exceeding the national trend
+        factor show HCC concentration patterns consistent with RADV audit targeting criteria. For ESRD
+        enrollment type, a positive V28 delta signals CKD coding specificity opportunity &mdash; CHF+CKD
+        combinations rewarded under V28 when documented at Stage 4/5. Aged Non-Dual counties showing negative
+        V28 delta face vascular disease and metabolic HCC compression unrelated to actual health change.</p>
+      </div>
+    </section>
+
+    <!-- ============================ MODULE B ============================ -->
+    <section id="panel-b" role="tabpanel" aria-labelledby="tab-b" hidden>
+      <div class="grid2">
+        <div class="card">
+          <h2>ACO financial performance distribution</h2>
+          <p class="cap">Simulated shared savings / loss &middot; MSR threshold marked &middot; source: derived</p>
+          <div class="chart" id="chart-b-hist"></div>
+          <p class="foot" id="b-hist-foot"></p>
+        </div>
+        <div class="card">
+          <h2>Benchmark vs. actual &middot; by RAF quartile</h2>
+          <p class="cap">Per-beneficiary &middot; risk-adjusted &middot; source: derived + constant ref</p>
+          <div class="chart" id="chart-b-quartile"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Benchmark version skew &mdash; V24 vs. V28</h2>
+        <p class="cap">Methodology artifact vs. genuine performance change &middot; per enrollment type &middot;
+           V28 full implementation CY2026 &middot; source: external ref + constant</p>
+        <div class="chart short" id="chart-b-skew"></div>
+        <p class="foot">Directional estimates from CMS Announcement Tables VIII-1 / VI-1 &mdash; national V28 delta factors by enrollment type.</p>
+      </div>
+
+      <div class="card">
+        <h2>Shared savings by RAF band &middot; with MSR filter</h2>
+        <p class="cap" id="b-raf-cap"></p>
+        <div class="tw"><table id="table-b"><thead></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="insight amber">
+        <div class="lbl">Key finding</div>
+        <p>ACOs with RAF scores above 1.20 systematically exceed benchmark under Track A. The V28 adjustment
+        column shows increasing negative skew at higher RAF bands &mdash; the version skew is largest exactly
+        where financial pressure is already highest. The 0.86&ndash;1.00 band is the analytically interesting
+        case: counties are generating savings but failing to clear MSR, meaning the benchmark methodology
+        penalizes moderate-complexity populations. TEAM episode pricing will face the same dynamic for
+        surgical patients with comorbidities in the 1.01&ndash;1.20 RAF range.</p>
+      </div>
+    </section>
+
+    <!-- ============================ MODULE C ============================ -->
+    <section id="panel-c" role="tabpanel" aria-labelledby="tab-c" hidden>
+      <div id="panel-c-disabled" class="card">
+        <p class="empty">Module C is disabled. Enable it with the toggle in the sidebar
+          (<b>Modules &rarr; Enable Module C &mdash; PA metrics</b>).</p>
+      </div>
+      <div id="panel-c-body" hidden>
+        <div class="legend-inline">
+          <span><span class="badge derived">derived</span> MSSP PUF proxy</span>
+          <span><span class="badge external">external</span> payer disclosure (real)</span>
+          <span><span class="badge constant">constant</span> CMS regulatory parameter</span>
+          <span><span class="badge">simulated</span> modeled estimate</span>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h2 id="c-left-title">Payer disclosure metrics</h2>
+            <p class="cap" id="c-left-cap"></p>
+            <div class="chart" id="chart-c-left"></div>
+          </div>
+          <div class="card">
+            <h2 id="c-right-title">Request volume</h2>
+            <p class="cap" id="c-right-cap"></p>
+            <div class="chart" id="chart-c-right"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2 id="c-table-title">CMS-required PA metric fields</h2>
+          <p class="cap" id="c-table-cap"></p>
+          <div class="tw"><table id="table-c"><thead></thead><tbody></tbody></table></div>
+        </div>
+        <div class="insight">
+          <div class="lbl">Key finding</div>
+          <p>MSSP-aligned populations show slightly elevated simulated denial rates vs. Medicare FFS,
+          consistent with higher specialty utilization in ACO populations. Field 4 (appeal approval rate)
+          shows the largest gap vs. MA benchmarks &mdash; suggesting ACO-adjacent populations face more
+          defensible initial denials, or lower propensity to appeal. Field 5 (extended review) has no public
+          benchmark &mdash; an analytical gap in the CMS-0057-F public reporting schema itself, not a data
+          limitation of this simulation.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="./app.js"></script>
+</body>
+</html>
