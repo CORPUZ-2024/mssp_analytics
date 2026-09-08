@@ -209,13 +209,12 @@ th { color: var(--text-muted); font-weight: 600; font-size: 10.5px;
      text-transform: uppercase; letter-spacing: .04em; }
 td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
-/* Column-definition tooltip. The native title="" attribute is kept as an
-   accessibility/fallback carrier, but the visible tooltip is this custom
-   popover: it shows instantly on hover or keyboard focus, unlike a native
-   title (~1-1.5s hover delay in most browsers, no support on touch at all). */
+/* Column-definition tooltip: a custom popover that shows instantly on hover
+   or keyboard focus. No native title="" attribute is set on these headers --
+   pairing one with this popover fired both, showing two overlapping
+   definitions on the same hover. */
 th[data-tip] {
   position: relative; cursor: help;
-  border-bottom: 1px dotted var(--text-muted);
 }
 th[data-tip]::after {
   content: attr(data-tip);
