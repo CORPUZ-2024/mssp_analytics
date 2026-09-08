@@ -286,6 +286,20 @@ function renderModuleA(rows) {
   const t = tokens();
   const hasYoy = rows.some((r) => r.yoy !== null && r.yoy !== undefined);
 
+  // The "Min YoY delta threshold" slider used to be read only inside
+  // renderRankedTable(), so moving it updated the table underneath while the
+  // histogram, scatter and OC chart above stayed on the unfiltered set --
+  // the whole tab looked unresponsive except for the one panel that changed.
+  // Apply it once here and feed every panel the same filtered population, with
+  // the same "fall back to the full set rather than show nothing" behaviour
+  // the table already had.
+  const thresholdActive = hasYoy && S.threshold > 0;
+  const aboveThreshold = thresholdActive
+    ? rows.filter((r) => Math.abs(r.yoy ?? 0) >= S.threshold / 100)
+    : rows;
+  const thresholdFellBack = thresholdActive && aboveThreshold.length === 0;
+  const viewRows = aboveThreshold.length ? aboveThreshold : rows;
+
   /* --- Histogram: YoY delta, or absolute risk when no prior year exists --- */
   const useCol = hasYoy ? "yoy" : "risk";
   const edges = hasYoy ? YOY_EDGES : RISK_EDGES;
@@ -295,7 +309,7 @@ function renderModuleA(rows) {
     ? [t.divNeg[2], t.divNeg[0], t.divMid, t.divPos[0], t.divPos[1], t.divPos[2], t.divPos[3]]
     : [t.divNeg[2], t.divNeg[1], t.divNeg[0], t.divMid, t.divPos[1], t.divPos[3]];
 
-  const values = rows.map((r) => r[useCol]).filter((v) => v !== null && v !== undefined);
+  const values = viewRows.map((r) => r[useCol]).filter((v) => v !== null && v !== undefined);
   const counts = new Array(labels.length).fill(0);
   for (const v of values) {
     const i = binIndex(v, edges);
@@ -323,9 +337,14 @@ function renderModuleA(rows) {
     })
   });
 
-  document.getElementById("a-hist-foot").textContent = hasYoy
+  const thresholdNote = thresholdActive
+    ? (thresholdFellBack
+        ? ` · no counties clear the ${S.threshold}% threshold — showing all counties instead`
+        : ` · filtered to |YoY delta| ≥ ${S.threshold}%`)
+    : "";
+  document.getElementById("a-hist-foot").textContent = (hasYoy
     ? `n=${values.length.toLocaleString()} · mean ${fmtPct(mean(values))} · bars show county count per risk tier`
-    : `n=${values.length.toLocaleString()} counties · bars show count per RAF band`;
+    : `n=${values.length.toLocaleString()} counties · bars show count per RAF band`) + thresholdNote;
 
   /* --- Scatter: YoY delta vs. efficiency ratio, coloured by RADV level --- */
   const LEVELS = [
@@ -333,7 +352,7 @@ function renderModuleA(rows) {
     { name: "Medium", color: t.ord[1], symbol: "diamond" },
     { name: "High", color: t.ord[2], symbol: "triangle-up" }
   ];
-  let pts = rows.filter((r) =>
+  let pts = viewRows.filter((r) =>
     r.efficiency !== null && r[useCol] !== null && (r.personYears ?? 0) >= 10);
   pts = thin(pts, 600);
 
@@ -370,10 +389,11 @@ function renderModuleA(rows) {
   });
   document.getElementById("a-scatter-foot").textContent =
     `n=${pts.length.toLocaleString()} county × enrollment rows shown · person_years ≥ 10 · `
-    + `thinned deterministically from ${rows.filter((r) => r.efficiency !== null && (r.personYears ?? 0) >= 10).length.toLocaleString()}`;
+    + `thinned deterministically from ${viewRows.filter((r) => r.efficiency !== null && (r.personYears ?? 0) >= 10).length.toLocaleString()}`
+    + thresholdNote;
 
-  renderOcChart(rows);
-  renderRankedTable(rows, hasYoy);
+  renderOcChart(viewRows);
+  renderRankedTable(viewRows, hasYoy);
 }
 
 /**
@@ -437,13 +457,11 @@ function renderOcChart(rows) {
 }
 
 function renderRankedTable(rows, hasYoy) {
+  // rows is already threshold-filtered by renderModuleA(), same as the
+  // histogram, scatter and OC chart -- this used to re-filter independently,
+  // which is exactly why the table changed with the slider and nothing else did.
   const t = tokens();
-  let ranked = rows.slice().sort((a, b) => (b.radvScore ?? 0) - (a.radvScore ?? 0));
-
-  if (hasYoy && S.threshold > 0) {
-    const filtered = ranked.filter((r) => Math.abs(r.yoy ?? 0) >= S.threshold / 100);
-    if (filtered.length) ranked = filtered;
-  }
+  const ranked = rows.slice().sort((a, b) => (b.radvScore ?? 0) - (a.radvScore ?? 0));
   const top = ranked.slice(0, 20);
 
   const flagColor = { Low: t.ord[0], Medium: t.ord[1], High: t.ord[2] };
