@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSSP Dashboard Mockup v2</title>
+<style>
+:root{
+  --bg:#ffffff;--bg2:#f7f6f2;--bg3:#f0eeea;
+  --txt:#1a1a18;--txt2:#5f5e5a;--txt3:#888780;
+  --brd:rgba(0,0,0,0.12);--brd2:rgba(0,0,0,0.22);
+  --pu:#534AB7;--pu-l:#EEEDFE;--pu-d:#3C3489;
+  --te:#0F6E56;--te-l:#D1FAE5;--te-d:#085041;
+  --am:#854F0B;--am-l:#FEF3C7;--am-d:#633806;
+  --co:#993C1D;--co-l:#FAECE7;
+  --gr:#3B6D11;--gr-l:#EAF3DE;
+  --red:#A32D2D;--red-l:#FCEBEB;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'SF Mono','Fira Code',monospace;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2c;
+    --txt:#e8e6de;--txt2:#9c9a92;--txt3:#6e6d67;
+    --brd:rgba(255,255,255,0.10);--brd2:rgba(255,255,255,0.20);
+    --pu-l:#26215C;--te-l:#085041;--am-l:#412402;--co-l:#4A1B0C;
+    --gr-l:#173404;--red-l:#501313;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:transparent;color:var(--txt);padding:0.5rem 0;font-size:13px;line-height:1.5}
+
+/* ─── Shell ──────────────────────────────────── */
+.shell{border:0.5px solid var(--brd2);border-radius:12px;overflow:hidden;background:var(--bg)}
+.topbar{background:var(--bg2);border-bottom:0.5px solid var(--brd);padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-size:13px;font-weight:500}
+.topbar-sub{font-size:11px;color:var(--txt2)}
+.tag{font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;background:var(--bg3);border:0.5px solid var(--brd2);color:var(--txt2);margin-left:4px}
+
+/* ─── Tabs ───────────────────────────────────── */
+.tabs{display:flex;border-bottom:0.5px solid var(--brd);background:var(--bg2);overflow-x:auto}
+.tab{font-size:11px;font-weight:500;padding:7px 13px;cursor:pointer;color:var(--txt2);border-bottom:2px solid transparent;white-space:nowrap;transition:all .12s;user-select:none}
+.tab:hover{color:var(--txt)}
+.tab.active{color:var(--txt);border-bottom-color:var(--pu)}
+
+/* ─── Body ───────────────────────────────────── */
+.body{display:flex;min-height:520px}
+
+/* ─── Sidebar ────────────────────────────────── */
+.sidebar{width:176px;flex-shrink:0;border-right:0.5px solid var(--brd);padding:10px;background:var(--bg2)}
+.sb-section{margin-bottom:14px}
+.sb-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--txt3);margin-bottom:6px}
+.sb-ctrl{margin-bottom:10px}
+.sb-ctrl label{font-size:11px;color:var(--txt2);display:block;margin-bottom:3px}
+select,input[type=range]{width:100%;font-size:11px;color:var(--txt);background:var(--bg);border:0.5px solid var(--brd2);border-radius:4px;padding:3px 5px}
+input[type=range]{padding:0;border:none;background:transparent}
+.sb-val{font-size:10px;color:var(--txt2);margin-top:2px}
+.kpi{background:var(--bg);border-radius:8px;border:0.5px solid var(--brd);padding:7px 9px;margin-bottom:6px}
+.kpi-lbl{font-size:10px;color:var(--txt2)}
+.kpi-val{font-size:17px;font-weight:500;line-height:1.2}
+.kpi-sub{font-size:10px;color:var(--txt3)}
+
+/* ─── Error/warning callouts ─────────────────── */
+.warn-box{background:var(--am-l);border:0.5px solid var(--am);border-radius:6px;padding:6px 9px;margin-bottom:8px;font-size:10px;color:var(--am-d);line-height:1.4}
+.warn-box strong{font-weight:600;display:block;margin-bottom:2px}
+.err-box{background:var(--red-l);border:0.5px solid var(--red);border-radius:6px;padding:6px 9px;margin-bottom:8px;font-size:10px;color:var(--red);line-height:1.4}
+.err-box strong{font-weight:600;display:block;margin-bottom:2px}
+.info-box{background:var(--pu-l);border:0.5px solid var(--pu);border-radius:6px;padding:6px 9px;margin-bottom:8px;font-size:10px;color:var(--pu-d);line-height:1.4}
+.info-box strong{font-weight:600;display:block;margin-bottom:2px}
+
+/* ─── Main area ──────────────────────────────── */
+.main{flex:1;padding:12px;overflow:hidden;min-width:0}
+.panel{display:none}
+.panel.active{display:block}
+
+/* ─── Chart cards ────────────────────────────── */
+.card{border:0.5px solid var(--brd);border-radius:8px;padding:10px;margin-bottom:10px;background:var(--bg)}
+.card-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.card-title{font-size:12px;font-weight:500;margin-bottom:2px}
+.card-sub{font-size:11px;color:var(--txt2);margin-bottom:8px;line-height:1.4}
+.card-note{font-size:10px;color:var(--txt3);margin-top:6px;font-style:italic}
+canvas{display:block;width:100%}
+
+/* ─── Tables ─────────────────────────────────── */
+.tbl{width:100%;font-size:11px;border-collapse:collapse}
+.tbl th{font-weight:500;color:var(--txt2);text-align:left;padding:4px 7px;border-bottom:0.5px solid var(--brd);font-size:10px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.tbl td{padding:5px 7px;border-bottom:0.5px solid var(--brd);color:var(--txt);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .mono{font-family:var(--mono);font-size:10px;color:var(--txt2)}
+.hi{color:var(--red);font-weight:500}
+.md{color:var(--am);font-weight:500}
+.lo{color:var(--gr);font-weight:500}
+.gap{color:var(--red);font-weight:500;font-size:10px}
+.partial{color:var(--am);font-size:10px}
+.ok{color:var(--gr);font-size:10px}
+.badge{display:inline-block;font-size:9px;font-weight:600;padding:1px 6px;border-radius:99px;margin-left:4px;vertical-align:middle}
+.badge-drv{background:var(--te-l);color:var(--te-d)}
+.badge-ext{background:var(--am-l);color:var(--am-d)}
+.badge-const{background:var(--pu-l);color:var(--pu-d)}
+.badge-sim{background:var(--bg3);color:var(--txt2)}
+
+/* ─── Finding bar ────────────────────────────── */
+.finding{background:var(--bg2);border-radius:0 8px 8px 0;padding:9px 12px;border-left:3px solid var(--pu);margin-top:4px}
+.finding.te{border-left-color:var(--te)}
+.finding.am{border-left-color:var(--am)}
+.finding.co{border-left-color:var(--co)}
+.finding-lbl{font-size:10px;font-weight:500;color:var(--txt2);margin-bottom:3px}
+.finding p{font-size:11px;line-height:1.5;color:var(--txt)}
+
+/* ─── Composite formula ──────────────────────── */
+.formula{font-family:var(--mono);font-size:11px;background:var(--bg3);border:0.5px solid var(--brd);border-radius:6px;padding:7px 10px;margin-bottom:8px;color:var(--txt);line-height:1.6}
+.formula span.op{color:var(--pu);font-weight:600}
+.formula span.w{color:var(--te)}
+
+/* ─── OC stability chart ─────────────────────── */
+.oc-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+.oc-cell{background:var(--bg2);border-radius:6px;padding:6px 8px;text-align:center}
+.oc-cell .oc-lbl{font-size:10px;color:var(--txt2);margin-bottom:3px}
+.oc-cell .oc-val{font-size:15px;font-weight:500}
+
+/* ─── V28 delta indicator ────────────────────── */
+.v28-up{color:var(--gr);font-weight:500}
+.v28-dn{color:var(--red);font-weight:500}
+.v28-neu{color:var(--txt2)}
+
+/* ─── Sparkbars ──────────────────────────────── */
+.spark-wrap{height:5px;background:var(--brd);border-radius:3px;margin-top:4px}
+.spark-fill{height:5px;border-radius:3px}
+
+/* ─── Source type legend ─────────────────────── */
+.legend-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:10px;color:var(--txt2)}
+.legend-item{display:flex;align-items:center;gap:4px}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">CORPUZ-2024 / cost_risk_score_agg_dashb</div>
+    <div class="topbar-sub">CMS MSSP County-Level Analytics · v5 aligned · 3 modules · synthetic data for illustration</div>
+  </div>
+  <div>
+    <span class="tag">CORPUZ-2024</span>
+    <span class="tag">github</span>
+    <span class="tag">streamlit</span>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('mA')">Module A — HCC risk flags</div>
+  <div class="tab" onclick="switchTab('mB')">Module B — Shared savings</div>
+  <div class="tab" onclick="switchTab('mC')">Module C — PA metrics</div>
+</div>
+
+<div class="body">
+
+<!-- SIDEBAR (tab-aware — JS swaps content) -->
+<div class="sidebar" id="sidebar"></div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ═══════════════════════════════════════════ MODULE A ═══ -->
+<div class="panel active" id="panel-mA">
+
+  <div class="card-row">
+    <div class="card">
+      <div class="card-title">Risk score YoY delta distribution</div>
+      <div class="card-sub">AVG_RISK_SCORE delta by county · flagged above threshold <span class="badge badge-drv">derived</span></div>
+      <div style="position:relative;height:148px"><canvas id="ch-hist"></canvas></div>
+      <div class="card-note">⚠ Common error: if avg_risk_score column contains string "N/A" instead of NaN, .pct_change() returns TypeError. Cast to float first: df['avg_risk_score'] = pd.to_numeric(df['avg_risk_score'], errors='coerce')</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Risk score growth vs. expenditure efficiency ratio</div>
+      <div class="card-sub">X: YoY delta (%) · Y: PER_CAPITA_EXP / AVG_RISK_SCORE ($/unit) <span class="badge badge-drv">derived</span></div>
+      <div style="position:relative;height:148px"><canvas id="ch-scatter"></canvas></div>
+      <div class="card-note">⚠ Y-axis is a dollar ratio (~$8,000–$20,000), not a 0–100 score. Plotly default axis will render as integer ticks if the column dtype is object — ensure float64 before plotting. Filter person_years &lt; 100 to suppress small-N volatility.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">OC-cut stability — risk score across data cuts</div>
+    <div class="card-sub">OC1 → OC2 → OC3 → Final · large OC1→Final delta = late coding pattern (single-source HCC proxy) <span class="badge badge-drv">derived</span></div>
+    <div id="oc-bars" style="margin-bottom:8px"></div>
+    <div style="position:relative;height:120px;width:100%"><canvas id="ch-oc"></canvas></div>
+    <div class="card-note">⚠ This chart requires multiple PUF vintages (OC1, OC3, Final) to be loaded and joined on (STATE_ID, COUNTY_ID, YEAR, enrollment_type). Missing OC vintage = KeyError on merge. Validate all cut files are present before joining: required columns = ['STATE_ID','COUNTY_ID','YEAR','enrollment_type','avg_risk_score','per_capita_exp']</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Top flagged counties — RADV risk composite ranking</div>
+    <div class="card-sub">Composite = (YoY delta × 0.4) + (Expenditure growth ratio × 0.4) + (V28 coding exposure index × 0.2)</div>
+    <div class="formula">
+      Composite_score <span class="op">=</span> <span class="w">(0.4)</span> × YoY_delta <span class="op">+</span> <span class="w">(0.4)</span> × Exp_growth_ratio <span class="op">+</span> <span class="w">(0.2)</span> × V28_coding_exposure_idx<br>
+      V28_coding_exposure_idx <span class="op">=</span> Σ(HCC_prevalence_wt_i × (V24_coeff_i − V28_coeff_i)) / avg_risk_score <span class="badge badge-ext">CMS Announcement Tables VIII-1 / VI-1</span><br>
+      Exp_growth_ratio <span class="op">=</span> (PER_CAPITA_EXP_N − PER_CAPITA_EXP_N-1) / PER_CAPITA_EXP_N-1 <span class="badge badge-drv">derived</span><br>
+      <small style="color:#854F0B;font-style:italic">Weights 0.4/0.4/0.2 are unvalidated working assumptions — analogous to FICO score weights before empirical validation. Run sensitivity (0.5/0.3/0.2 and 0.33/0.33/0.33). Apply confound flags: TEAM_county | V28_transition_year | enrollment_type_shift → mark composite "confounded" if any active.</small>
+    </div>
+    <table class="tbl">
+      <tr>
+        <th>County</th><th>State</th><th>Enroll type</th>
+        <th>YoY risk Δ</th><th>Exp growth ratio</th><th>V28 exposure idx</th>
+        <th>Confound flag</th><th>OC stability</th><th>Composite</th><th>RADV flag</th>
+      </tr>
+      <tr>
+        <td>Los Angeles</td><td>CA</td><td>Aged Dual</td>
+        <td>+14.2%</td><td>+8.1%</td><td class="mono">0.68 (DM/CHF)</td>
+        <td>—</td><td class="md">Unstable</td><td>0.84</td><td class="hi">High</td>
+      </tr>
+      <tr>
+        <td>Broward</td><td>FL</td><td>ESRD</td>
+        <td>+12.8%</td><td>+5.9%</td><td class="mono v28-up">−0.12 (CKD opp.)</td>
+        <td>—</td><td class="md">Unstable</td><td>0.76</td><td class="hi">High</td>
+      </tr>
+      <tr>
+        <td>Cook</td><td>IL</td><td>Aged Non-Dual</td>
+        <td>+10.1%</td><td>+3.2%</td><td class="mono">0.54 (vascular)</td>
+        <td>—</td><td class="lo">Stable</td><td>0.53</td><td class="md">Medium</td>
+      </tr>
+      <tr>
+        <td>Harris</td><td>TX</td><td>Aged Non-Dual</td>
+        <td>+9.7%</td><td>+2.8%</td><td class="mono">0.61 (vascular)</td>
+        <td class="md">TEAM ⚠</td><td class="lo">Stable</td><td class="md">⚠ conf.</td><td class="md">Med*</td>
+      </tr>
+      <tr>
+        <td>King</td><td>WA</td><td>Disabled</td>
+        <td>+4.1%</td><td>−1.2%</td><td class="mono">0.42 (MH)</td>
+        <td>—</td><td class="lo">Stable</td><td>0.12</td><td class="lo">Low</td>
+      </tr>
+    </table>
+    <div class="card-note">⚠ V28 delta est. column requires the external CMS HCC crosswalk file (hcc_mapper.py). If crosswalk is not loaded, column will be NaN and chart will render as empty bars. Also: Broward ESRD shows positive V28 delta — CKD Stage 4/5 specificity is rewarded in V28. Harris shows −6.1% due to Obesity HCC being downweighted.</div>
+  </div>
+
+  <div class="finding te">
+    <div class="finding-lbl">Module A — key finding</div>
+    <p>Counties with YoY risk score growth &gt;10% AND expenditure growth exceeding the national trend factor (~3.6% for PY2024) show V28 coding exposure patterns consistent with RADV audit targeting criteria. For ESRD (Broward), negative V28 exposure index signals CKD coding specificity opportunity — Stage 4/5 documentation rewarded under V28. Aged Non-Dual counties (Cook) with high vascular/metabolic HCC exposure face V28 compression regardless of coding quality — document as methodology artifact. Harris excluded from primary ranking due to TEAM_county confound flag.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ MODULE B ═══ -->
+<div class="panel" id="panel-mB">
+
+  <div class="card-row">
+    <div class="card">
+      <div class="card-title">ACO financial performance distribution</div>
+      <div class="card-sub">Simulated shared savings / loss · Track A parameters · MSR threshold shown <span class="badge badge-drv">derived</span></div>
+      <div style="position:relative;height:148px"><canvas id="ch-savings"></canvas></div>
+      <div class="card-note">⚠ MSR line annotation requires Chart.js plugin:annotation. If not loaded from CDN, the line silently doesn't render — no error. Add: import 'chartjs-plugin-annotation' and register it. Alternatively use a reference line drawn manually via afterDraw hook.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Benchmark vs. actual · by RAF quartile</div>
+      <div class="card-sub">Per-beneficiary · risk-adjusted · grouped bars · V24 and V28 adjusted shown <span class="badge badge-drv">derived</span> <span class="badge badge-const">constant ref</span></div>
+      <div style="position:relative;height:148px"><canvas id="ch-bench"></canvas></div>
+      <div class="card-note">⚠ Y-axis units are $/beneficiary (~$8,000–$20,000). If the PUF per_capita_exp column is loaded as an integer, division by avg_risk_score produces integer truncation. Cast: df['eff_ratio'] = df['per_capita_exp'].astype(float) / df['avg_risk_score'].astype(float)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Benchmark version skew — V24 vs. V28 efficiency ratio</div>
+    <div class="card-sub">Methodology artifact vs. genuine performance change · per enrollment type · V28 full implementation CY2026 <span class="badge badge-ext">external ref</span> <span class="badge badge-const">constant</span></div>
+    <div style="position:relative;height:120px"><canvas id="ch-skew"></canvas></div>
+    <div class="card-note">⚠ V28 coefficient table is an external constant from CMS 2024 Announcement Table VIII-1. If the crosswalk CSV is not in the repo, this chart will error with FileNotFoundError. Mock it with hardcoded deltas: ESRD +3%, Disabled −4%, Aged Dual −2%, Aged Non-Dual −5.8% (approximate V24→V28 direction from CMS 3.12% avg reduction).</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Shared savings by RAF band · with MSR filter</div>
+    <div class="card-sub">Track A MSR: 3.5% at ≤5K beneficiaries → 2.0% at &gt;60K · "At MSR threshold" band = saving but not qualifying</div>
+    <table class="tbl">
+      <tr>
+        <th>RAF band</th><th>ACO count</th><th>Avg benchmark</th><th>Avg actual</th>
+        <th>Savings rate</th><th>MSR (est.)</th><th>Qualifies?</th><th>V28 skew adj.</th>
+      </tr>
+      <tr><td>0.70–0.85</td><td>84</td><td>$9,420</td><td>$8,940</td><td class="lo">+5.1%</td><td>3.2%</td><td class="lo">Yes</td><td class="v28-dn">−0.8pp</td></tr>
+      <tr><td>0.86–1.00</td><td>212</td><td>$10,880</td><td>$10,650</td><td class="lo">+2.1%</td><td>2.8%</td><td class="md">At MSR</td><td class="v28-dn">−1.2pp</td></tr>
+      <tr><td>1.01–1.20</td><td>178</td><td>$12,340</td><td>$12,580</td><td class="md">−1.9%</td><td>2.5%</td><td class="hi">No</td><td class="v28-dn">−2.1pp</td></tr>
+      <tr><td>1.21–1.50</td><td>91</td><td>$14,100</td><td>$15,220</td><td class="hi">−7.9%</td><td>2.2%</td><td class="hi">No</td><td class="v28-dn">−3.4pp</td></tr>
+      <tr><td>1.51+</td><td>34</td><td>$17,600</td><td>$20,100</td><td class="hi">−14.2%</td><td>2.0%</td><td class="hi">No</td><td class="v28-dn">−4.8pp</td></tr>
+    </table>
+    <div class="card-note">⚠ MSR is a function of attributed beneficiary count (n_ab_ben), not RAF band. This table approximates MSR per band using median n_ab_ben per band. In actual implementation, compute MSR per ACO individually then aggregate. Also: "At MSR" row (0.86–1.00) means savings exist but are below the threshold to qualify for distribution — this is a meaningful operational finding, not a data error.</div>
+  </div>
+
+  <div class="finding am">
+    <div class="finding-lbl">Module B — key finding</div>
+    <p>ACOs with RAF above 1.20 systematically exceed benchmark under Track A. V28 adjustment column shows increasing negative skew at higher RAF bands — the V28 version skew is largest exactly where financial pressure is already highest. The 0.86–1.00 band is the analytically interesting case: counties are generating savings but failing to clear MSR, meaning the benchmark methodology penalizes moderate-complexity populations. TEAM episode pricing will face the same dynamic for surgical patients with comorbidities in the 1.01–1.20 RAF range.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ MODULE C ═══ -->
+<div class="panel" id="panel-mC">
+
+  <div class="legend-row">
+    <span class="badge badge-drv" style="padding:2px 8px">derived — MSSP PUF proxy</span>
+    <span class="badge badge-ext" style="padding:2px 8px">external — literature benchmark</span>
+    <span class="badge badge-const" style="padding:2px 8px">constant — CMS regulatory parameter</span>
+    <span class="badge badge-sim" style="padding:2px 8px">simulated — modeled estimate</span>
+  </div>
+
+  <div class="card-row">
+    <div class="card">
+      <div class="card-title">Simulated PA approval / denial · by service type</div>
+      <div class="card-sub">Stacked 100% bar · fields 2 + 3 · MSSP specialty utilization proxy <span class="badge badge-drv">derived</span></div>
+      <div style="position:relative;height:148px"><canvas id="ch-pa"></canvas></div>
+      <div class="card-note">⚠ Stacked bar must sum to exactly 100%. If approval_rate + denial_rate ≠ 100 due to rounding in simulation, Plotly renders a gap or overflow. Enforce: denial_rate = round(100 - approval_rate, 1). Also: service type labels must be strings, not integers — if utilization category codes are loaded as ints (e.g. 1,2,3), axis labels show numbers not names.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">PA burden estimate · admin hours per 1,000 beneficiaries</div>
+      <div class="card-sub">Based on AMA 13hr/physician/week benchmark × specialty utilization rate <span class="badge badge-ext">external ref</span></div>
+      <div style="position:relative;height:148px"><canvas id="ch-burden"></canvas></div>
+      <div class="card-note">⚠ This metric is not in the MSSP PUF — it is fully modeled. Document clearly in README and as a chart subtitle. If presented without qualification, a technical reviewer will flag it as fabricated. Label as "estimated" and cite AMA 2024 PA survey as the burden-per-physician reference.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">All 7 CMS-required PA metric fields — simulated vs. benchmark</div>
+    <div class="card-sub">CMS-0057-F public reporting schema · payers must post annually by March 31 · drugs excluded per rule</div>
+    <table class="tbl">
+      <tr>
+        <th>#</th><th>CMS metric field</th><th>Source type</th>
+        <th>Simulated value</th><th>FFS benchmark</th><th>MA benchmark</th><th>Variance vs. FFS</th><th>Flag</th>
+      </tr>
+      <tr>
+        <td>1</td><td>PA-required items list</td><td><span class="badge badge-const">constant</span></td>
+        <td>18 service types</td><td>CMS PA list (Jan 2026)</td><td>Plan-specific</td><td>—</td><td class="ok">Reference</td>
+      </tr>
+      <tr>
+        <td>2</td><td>% standard approved</td><td><span class="badge badge-drv">derived</span></td>
+        <td>91.4%</td><td>92.3%</td><td>92.3%</td><td>−0.9 pp</td><td class="ok">Normal</td>
+      </tr>
+      <tr>
+        <td>3</td><td>% standard denied</td><td><span class="badge badge-drv">derived</span></td>
+        <td>8.6%</td><td>7.7%</td><td>7.7%</td><td>+0.9 pp</td><td class="ok">Normal</td>
+      </tr>
+      <tr>
+        <td>4</td><td>% approved after appeal</td><td><span class="badge badge-ext">external</span></td>
+        <td>61.2%</td><td>~6.4% appeal rate (FFS 2022)</td><td>&gt;80% overturned (KFF 2024)</td><td>−18.8 pp vs. MA</td><td class="md">Investigate</td>
+      </tr>
+      <tr>
+        <td>5</td><td>% extended review approved</td><td><span class="badge badge-sim">simulated</span></td>
+        <td>3.1%</td><td>N/A (FFS)</td><td>N/A (not reported)</td><td>—</td><td class="ok">Modeled</td>
+      </tr>
+      <tr>
+        <td>6</td><td>% expedited approved</td><td><span class="badge badge-drv">derived</span></td>
+        <td>88.7%</td><td>89.1%</td><td>N/A</td><td>−0.4 pp</td><td class="ok">Normal</td>
+      </tr>
+      <tr>
+        <td>7</td><td>% expedited denied</td><td><span class="badge badge-drv">derived</span></td>
+        <td>11.3%</td><td>10.9%</td><td>N/A</td><td>+0.4 pp</td><td class="ok">Normal</td>
+      </tr>
+    </table>
+    <div class="card-note">⚠ Fields 2+3 must sum to 100%. Fields 6+7 must sum to 100%. Validate in pa_metrics_schema.py with a dataclass validator or @property. Field 4 uses a different denominator (denied decisions, not total decisions) — a common error is dividing appeal overturn count by total PA requests instead of total denials, which understates the overturn rate by ~12x. Field 5 has no FFS benchmark — document as "no public equivalent" in README, not as a gap.</div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-lbl">Module C — key finding</div>
+    <p>MSSP-aligned populations show slightly elevated simulated denial rates vs. FFS (8.6% vs. 7.7%), consistent with higher specialty utilization in ACO populations. Field 4 (appeal approval rate) shows the largest gap vs. MA benchmarks — 61% vs. &gt;80% — suggesting either ACO-adjacent populations face more defensible initial denials, or lower propensity to appeal. Field 5 (extended review) has no public benchmark; this is an analytical gap in the CMS-0057-F public reporting schema itself, not a data limitation of this simulation.</p>
+  </div>
+</div>
+
+
+</div><!-- /main -->
+</div><!-- /body -->
+</div><!-- /shell -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const dark=matchMedia('(prefers-color-scheme:dark)').matches;
+const gc=dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
+const tc=dark?'#9c9a92':'#73726c';
+const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10}}}}};
+
+// Sidebar data per tab
+const sidebars={
+  mA:{
+    label:"Module A filters",
+    controls:[
+      {type:"select",label:"State",opts:["All states","CA","TX","FL","IL","WA","NY"]},
+      {type:"select",label:"Enrollment type",opts:["All types","Aged Non-Dual","Aged Dual","Disabled","ESRD"]},
+      {type:"select",label:"Data cut",opts:["Final","OC3","OC2","OC1"]},
+      {type:"range",label:"Min YoY delta threshold",id:"delta",min:0,max:20,val:8,unit:"%"}
+    ],
+    kpis:[
+      {label:"Counties flagged",val:"47",sub:"of 847 · composite >0.5",id:"kpi-flag"},
+      {label:"High-risk (RADV)",val:"12",sub:"composite >0.75"},
+      {label:"Median efficiency ratio",val:"$11,420",sub:"PER_CAPITA_EXP / AVG_RISK_SCORE"}
+    ],
+    warn:"person_years < 100 suppressed (high variance)"
+  },
+  mB:{
+    label:"Module B filters",
+    controls:[
+      {type:"select",label:"Enrollment type",opts:["All types","Aged Non-Dual","Aged Dual","Disabled","ESRD"]},
+      {type:"select",label:"MSSP track",opts:["All tracks","Track A","Track B","ENHANCED"]},
+      {type:"select",label:"RAF band",opts:["All bands","0.70–0.85","0.86–1.00","1.01–1.20","1.21–1.50","1.51+"]},
+      {type:"select",label:"V28 adjustment",opts:["Show both","V24 only","V28 adjusted"]}
+    ],
+    kpis:[
+      {label:"Counties w/ savings",val:"296",sub:"52% of total (Track A)"},
+      {label:"Qualify after MSR",val:"241",sub:"lost 55 below MSR"},
+      {label:"Avg savings rate",val:"+2.3%",sub:"national MSSP avg 1–3%"}
+    ],
+    warn:"Segment by agreement_period_start_date: 2024 methodology change creates cohort split"
+  },
+  mC:{
+    label:"Module C filters",
+    controls:[
+      {type:"select",label:"Service type",opts:["All services","Cardiology","Orthopaedics","Oncology","Behavioral","Post-acute","DME"]},
+      {type:"select",label:"State",opts:["All states","CA","TX","FL","IL","WA"]},
+      {type:"select",label:"OC data cut",opts:["Final","OC3","OC1"]}
+    ],
+    kpis:[
+      {label:"Simulated denial rate",val:"8.6%",sub:"vs. 7.7% FFS reference"},
+      {label:"Appeal overturn rate",val:"61.2%",sub:"vs. >80% KFF MA data"},
+      {label:"Extended review est.",val:"3.1%",sub:"modeled · no FFS equiv."}
+    ],
+    warn:"Fields 2+3 must sum to 100%. Fields 6+7 must sum to 100%. Validate in schema."
+  },
+};
+
+function renderSidebar(tabId){
+  const s=sidebars[tabId];
+  let html=`<div class="sb-section"><div class="sb-lbl">${s.label}</div>`;
+  s.controls.forEach(c=>{
+    html+=`<div class="sb-ctrl"><label>${c.label}</label>`;
+    if(c.type==="select"){
+      html+=`<select>${c.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+    } else {
+      html+=`<input type="range" min="${c.min}" max="${c.max}" value="${c.val}" step="1" oninput="document.getElementById('v-${c.id}').textContent=this.value">
+      <div class="sb-val">Threshold: <span id="v-${c.id}">${c.val}</span>${c.unit}</div>`;
+    }
+    html+=`</div>`;
+  });
+  html+=`</div><div class="sb-section"><div class="sb-lbl">Summary</div>`;
+  s.kpis.forEach(k=>{
+    html+=`<div class="kpi"><div class="kpi-lbl">${k.label}</div><div class="kpi-val"${k.id?` id="${k.id}"`:''}>${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`;
+  });
+  html+=`</div>`;
+  if(s.warn) html+=`<div class="warn-box"><strong>Data note</strong>${s.warn}</div>`;
+  document.getElementById('sidebar').innerHTML=html;
+}
+
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const tabs=['mA','mB','mC'];
+  document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
+  renderSidebar(id);
+  // Charts must init AFTER panel is visible — Chart.js needs layout dimensions
+  requestAnimationFrame(() => initChartsForTab(id));
+}
+
+// ── Lazy chart registry — only init when tab first becomes visible ─────────────
+const chartInited = {};
+const chartDefs = {
+  mA: () => {
+    new Chart(document.getElementById('ch-hist'),{type:'bar',data:{
+      labels:['-5%','0–2%','2–5%','5–10%','10–15%','>15%'],
+      datasets:[{data:[8,74,192,138,52,28],backgroundColor:['#B5D4F4','#B5D4F4','#B5D4F4','#EF9F27','#D85A30','#E24B4A'],borderWidth:0,borderRadius:3}]
+    },options:{...base,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} counties`}}}}});
+
+    new Chart(document.getElementById('ch-scatter'),{type:'scatter',data:{datasets:[
+      {label:'Low risk', data:[{x:1,y:8900},{x:2,y:9200},{x:3,y:8700},{x:1.5,y:9400}],backgroundColor:'#5DCAA5',pointRadius:4},
+      {label:'Med risk', data:[{x:8,y:12400},{x:10,y:11800},{x:9,y:13100},{x:11,y:12900}],backgroundColor:'#EF9F27',pointRadius:4},
+      {label:'High risk',data:[{x:14,y:16800},{x:13,y:17200},{x:16,y:15900},{x:18,y:18400}],backgroundColor:'#E24B4A',pointRadius:5}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
+      x:{title:{display:true,text:'YoY delta (%)',color:tc,font:{size:10}},grid:{color:gc},ticks:{color:tc,font:{size:10}}},
+      y:{title:{display:true,text:'Efficiency ratio ($/unit)',color:tc,font:{size:10}},grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>'$'+v.toLocaleString()}}
+    }}});
+
+    new Chart(document.getElementById('ch-oc'),{type:'line',data:{
+      labels:['OC1','OC2','OC3','Final'],
+      datasets:[
+        {label:'Los Angeles (High)', data:[1.18,1.24,1.31,1.33],borderColor:'#E24B4A',backgroundColor:'transparent',pointRadius:4,borderWidth:2},
+        {label:'Cook (Med)',          data:[0.92,0.94,0.95,0.95],borderColor:'#EF9F27',backgroundColor:'transparent',pointRadius:4,borderWidth:2},
+        {label:'King (Low)',          data:[0.88,0.88,0.89,0.89],borderColor:'#5DCAA5',backgroundColor:'transparent',pointRadius:4,borderWidth:2}
+      ]
+    },options:{...base,plugins:{legend:{display:true,labels:{color:tc,font:{size:10},boxWidth:10,boxHeight:10}}},scales:{
+      x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},
+      y:{grid:{color:gc},ticks:{color:tc,font:{size:10}},title:{display:true,text:'avg_risk_score',color:tc,font:{size:10}}}
+    }}});
+  },
+
+  mB: () => {
+    new Chart(document.getElementById('ch-savings'),{type:'bar',data:{
+      labels:['<-10%','-5–10%','-1–5%','Break-even','+1–3%','+3–5%','>+5%'],
+      datasets:[{data:[18,31,62,45,112,89,42],backgroundColor:['#F09595','#F09595','#EF9F27','#B4B2A9','#9FE1CB','#5DCAA5','#1D9E75'],borderWidth:0,borderRadius:3}]
+    },options:{...base,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} counties`}}}}});
+
+    new Chart(document.getElementById('ch-bench'),{type:'bar',data:{
+      labels:['Q1 RAF <0.85','Q2 RAF 0.85–1.0','Q3 RAF 1.0–1.2','Q4 RAF >1.2'],
+      datasets:[
+        {label:'Benchmark (V28 adj.)',data:[9200,10880,12340,14100],backgroundColor:dark?'#3C3489':'#AFA9EC',borderWidth:0,borderRadius:3},
+        {label:'Actual spend',        data:[8750,10650,12580,15220],backgroundColor:dark?'#1D9E75':'#5DCAA5',borderWidth:0,borderRadius:3},
+        {label:'Benchmark (V24)',     data:[9560,11340,12900,14900],backgroundColor:dark?'#444441':'#D3D1C7',borderWidth:0,borderRadius:3}
+      ]
+    },options:{...base,plugins:{legend:{display:true,labels:{color:tc,font:{size:10},boxWidth:10,boxHeight:10}}},scales:{
+      x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},
+      y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>'$'+v.toLocaleString()}}
+    }}});
+
+    new Chart(document.getElementById('ch-skew'),{type:'bar',data:{
+      labels:['ESRD','Disabled','Aged Dual','Aged Non-Dual'],
+      datasets:[
+        {label:'V28 opportunity (+)',   data:[3.1,0,0,0],     backgroundColor:'#5DCAA5',borderWidth:0,borderRadius:3},
+        {label:'V28 compression (−)',   data:[0,-4.2,-1.8,-5.8],backgroundColor:'#F09595',borderWidth:0,borderRadius:3}
+      ]
+    },options:{...base,plugins:{legend:{display:true,labels:{color:tc,font:{size:10},boxWidth:10,boxHeight:10}}},scales:{
+      x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},
+      y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'},title:{display:true,text:'V24→V28 delta (%)',color:tc,font:{size:10}}}
+    }}});
+  },
+
+  mC: () => {
+    new Chart(document.getElementById('ch-pa'),{type:'bar',data:{
+      labels:['Cardiology','Ortho','Oncology','Neurology','Behavioral','Post-acute','DME'],
+      datasets:[
+        {label:'Approved',data:[91,88,86,90,83,79,85],backgroundColor:'#5DCAA5',borderWidth:0,borderRadius:3},
+        {label:'Denied',  data:[9,12,14,10,17,21,15], backgroundColor:'#F09595',borderWidth:0,borderRadius:3}
+      ]
+    },options:{...base,plugins:{legend:{display:true,labels:{color:tc,font:{size:10},boxWidth:10,boxHeight:10}}},scales:{
+      x:{stacked:true,grid:{color:gc},ticks:{color:tc,font:{size:10}}},
+      y:{stacked:true,max:100,grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'}}
+    }}});
+
+    new Chart(document.getElementById('ch-burden'),{type:'bar',data:{
+      labels:['LA','Miami','Chicago','Houston','Phoenix','Seattle','Dallas'],
+      datasets:[{data:[48,52,39,43,31,22,37],backgroundColor:'#7F77DD',borderWidth:0,borderRadius:3}]
+    },options:{...base,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} est. admin hrs / 1k ben`}}},scales:{
+      x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},
+      y:{grid:{color:gc},ticks:{color:tc,font:{size:10}},title:{display:true,text:'Est. admin hrs / 1,000 ben',color:tc,font:{size:10}}}
+    }}});
+  },
+
+};
+
+function initChartsForTab(id) {
+  if (!chartInited[id] && chartDefs[id]) {
+    chartDefs[id]();
+    chartInited[id] = true;
+  }
+}
+
+renderSidebar('mA');
+// Init Module A on load — it is the default active tab and is already visible
+initChartsForTab('mA');
+</script>
+</body>
+</html>

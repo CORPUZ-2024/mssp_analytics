@@ -1,0 +1,5 @@
+county_id,state_id,enrollment_type,year,total_requests,approved_requests,denied_requests,appeals_overturned,expedited_requests,expedited_approved,expedited_denied,source_type
+PLAN_LEVEL,CA,Blue Shield,2025,0,0,0,116,113125,111918,1207,external
+PLAN_LEVEL,CA,Health Net,2025,3096168,3020354,75814,0,394719,377670,17049,external
+PLAN_LEVEL,CA,SFHP,2025,0,0,0,102,62848,61606,1242,external
+PLAN_LEVEL,CA,Wellcare (Health Net),2025,290257,284520,5737,0,40022,38810,1212,external
