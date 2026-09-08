@@ -378,12 +378,17 @@ function renderModuleA(rows) {
 
   draw("chart-a-scatter", scatterTraces, {
     showlegend: false,
+    // Wider margins than the shared default: dollar-formatted y ticks (e.g.
+    // "$150,000") and percent-formatted x ticks both need real clearance
+    // from their axis titles, which the default 58/44 margins didn't leave --
+    // titles were sitting right against the tick labels.
+    margin: { l: 70, r: 16, t: 16, b: 54 },
     xaxis: Object.assign(layout().xaxis, {
-      title: { text: hasYoy ? "YoY risk score delta" : "Risk score", font: { size: 10 } },
+      title: { text: hasYoy ? "YoY risk score delta" : "Risk score", font: { size: 10 }, standoff: 14 },
       tickformat: hasYoy ? ".0%" : ".2f"
     }),
     yaxis: Object.assign(layout().yaxis, {
-      title: { text: "Efficiency ratio ($/unit)", font: { size: 10 } },
+      title: { text: "Efficiency ratio ($/unit)", font: { size: 10 }, standoff: 14 },
       tickprefix: "$", tickformat: ",.0f"
     })
   });
@@ -468,8 +473,41 @@ function renderRankedTable(rows, hasYoy) {
 
   const head = ["County", "State", "Enroll type", hasYoy ? "YoY risk Δ" : "Risk score",
     "Exp growth ratio", "V28 delta est.", "OC stability", "Composite", "RADV flag", "Confounded"];
-  document.querySelector("#table-a thead").innerHTML =
-    `<tr>${head.map((h, i) => `<th${i >= 3 && i <= 7 ? ' class="num"' : ""}>${h}</th>`).join("")}</tr>`;
+
+  // Column definitions, matched to what each figure actually is computed from
+  // (addRadvScore / addV28Index / renderOcChart) -- shown as a native tooltip
+  // on hover so the abbreviated header text isn't the only explanation.
+  const defs = [
+    null, null, null,
+    hasYoy
+      ? "Year-over-year change in AVG_RISK_SCORE vs. the prior published performance "
+        + "year: (current − prior) / prior."
+      : "AVG_RISK_SCORE for the current year. Shown instead of a YoY delta because no "
+        + "prior year is available for this selection.",
+    "Year-over-year change in per-capita expenditure (PER_CAPITA_EXP), computed the "
+      + "same way as YoY risk Δ.",
+    "Estimated net V28 coding-model exposure for this enrollment type, normalized by "
+      + "the county's risk score. Positive = net V28 compression (score likely falls "
+      + "under V28); negative = net V28 benefit (score likely rises). A directional "
+      + "estimate from CMS Announcement Tables, not fitted to this data.",
+    "Whether AVG_RISK_SCORE moved less than 2% between the earliest operational cut "
+      + "and the FINAL vintage; the percentage shown is that cut-to-final delta. Large, "
+      + "stable-high movement can indicate carry-forward or single-encounter coding.",
+    "RADV exposure composite: 0.4 × |YoY risk Δ| + 0.4 × |Exp growth ratio| + "
+      + "0.2 × |V28 delta est.|, each normalized 0–1 within the current selection. "
+      + "Illustrative weights, pending empirical validation.",
+    "Exposure tier (Low / Medium / High) by tercile of the Composite score within the "
+      + "current selection — not a fixed threshold.",
+    "Whether a known confounder may distort the composite for this row: a TEAM "
+      + "bundled-payment county, the PY2024 V28 transition year, or an ESRD/Disabled "
+      + "enrollment share that shifted >5pp year over year.",
+  ];
+
+  document.querySelector("#table-a thead").innerHTML = `<tr>${head.map((h, i) => {
+    const classAttr = i >= 3 && i <= 7 ? ' class="num"' : "";
+    const titleAttr = defs[i] ? ` title="${esc(defs[i])}"` : "";
+    return `<th${classAttr}${titleAttr}>${h}</th>`;
+  }).join("")}</tr>`;
 
   document.querySelector("#table-a tbody").innerHTML = top.map((r) => {
     const flag = r.radvLevel;
