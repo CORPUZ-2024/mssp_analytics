@@ -505,8 +505,12 @@ function renderRankedTable(rows, hasYoy) {
 
   document.querySelector("#table-a thead").innerHTML = `<tr>${head.map((h, i) => {
     const classAttr = i >= 3 && i <= 7 ? ' class="num"' : "";
-    const titleAttr = defs[i] ? ` title="${esc(defs[i])}"` : "";
-    return `<th${classAttr}${titleAttr}>${h}</th>`;
+    // title="" is kept for screen readers and as a native fallback; the
+    // visible tooltip itself is the data-tip CSS popover (see index.html) --
+    // it appears immediately on hover/focus, where title has a real delay
+    // and no touch support at all.
+    const tipAttrs = defs[i] ? ` title="${esc(defs[i])}" data-tip="${esc(defs[i])}" tabindex="0"` : "";
+    return `<th${classAttr}${tipAttrs}>${h}</th>`;
   }).join("")}</tr>`;
 
   document.querySelector("#table-a tbody").innerHTML = top.map((r) => {
