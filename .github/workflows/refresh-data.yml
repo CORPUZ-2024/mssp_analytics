@@ -18,7 +18,7 @@ on:
         type: boolean
         default: false
   push:
-    branches: [master]
+    branches: [master, main]
     paths:
       # Rebuild when the ETL that shapes the payload changes, so docs/data and
       # the code that produced it never drift apart.
