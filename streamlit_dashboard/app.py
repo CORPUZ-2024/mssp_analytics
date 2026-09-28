@@ -434,10 +434,12 @@ TABS = {
     "b": "B — Shared savings model",
     "c": "C — PA metrics (CMS-0057-F)",
 }
-_radio_kwargs = dict(format_func=TABS.get, horizontal=True)
+# Options are the visible labels (not keys + format_func) so AppTest can drive them.
+_radio_kwargs = dict(horizontal=True)
 if "label_visibility" in inspect.signature(st.radio).parameters:
     _radio_kwargs["label_visibility"] = "collapsed"
-TAB = st.radio("Module", list(TABS), **_radio_kwargs)
+_tab_label = st.radio("Module", list(TABS.values()), **_radio_kwargs)
+TAB = next(k for k, v in TABS.items() if v == _tab_label)
 
 # ---------------------------------------------------------------------------
 # Sidebar
@@ -456,7 +458,8 @@ with st.sidebar:
         THRESHOLD = st.slider("Min YoY delta threshold (%)", 0, 20, 0, 1)
     elif TAB == "b":
         _tracks = {"A": "Track A (upside only)", "B": "Track B", "ENHANCED": "ENHANCED"}
-        TRACK = st.selectbox("MSSP track", list(_tracks), format_func=_tracks.get)
+        _track_label = st.selectbox("MSSP track", list(_tracks.values()))
+        TRACK = next(k for k, v in _tracks.items() if v == _track_label)
         RAF = st.selectbox("RAF band", ["All bands"] + [b[0] for b in RAF_BANDS])
         V28 = st.selectbox("V28 adjustment", ["Show both", "V24 only", "V28 adjusted"])
     else:

@@ -98,14 +98,16 @@ index, RADV composite, benchmarks and MSR on the filtered selection. Like the Pa
 it reads only the committed payload in `docs/data/` and makes no request to
 data.cms.gov, so it runs offline.
 
-Ensure Python 3.9+ is installed. From the repository root:
+Requires Python 3.9+ **other than 3.9.7** — Streamlit excludes 3.9.7 from every release
+after 1.12. The pinned version is Streamlit 1.32.2. From the repository root:
 
 ```bash
-py -m pip install -r streamlit_dashboard/requirements.txt
-py -m streamlit run streamlit_dashboard/app.py
+py -3.11 -m venv .venv
+.venv\Scripts\python -m pip install -r streamlit_dashboard/requirements.txt
+.venv\Scripts\python -m streamlit run streamlit_dashboard/app.py
 ```
 
-On Windows, double-clicking `run.bat` does the same launch. The app opens at
+On Windows, double-clicking `run.bat` does the same launch (it uses `.venv` when present). The app opens at
 <http://localhost:8501>. To refresh its data, rebuild the payload with
 `python -m src.build_site` (below) or pull the latest `docs/data/` from `main`; the app
 picks up the new files on the next rerun.
