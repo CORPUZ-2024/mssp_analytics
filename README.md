@@ -6,7 +6,8 @@ analytical modules layered on top of it, and a static dashboard published to Git
 Pages.
 
 - **Dashboard:** https://corpuz-2024.github.io/mssp_analytics/
-- **Local Streamlit edition** (this branch): the same dashboard as a Streamlit app — see
+- **Streamlit edition** (this branch): https://mssp-analytics-dashboard.streamlit.app/ —
+  the same dashboard on the same `main` payload; see
   [Run the dashboard locally (Streamlit)](#run-the-dashboard-locally-streamlit)
 - **Modules:** HCC / RADV risk-exposure flags &middot; shared savings and benchmark
   modelling &middot; CMS-0057-F prior authorization metrics
@@ -192,14 +193,19 @@ machine whose default is 3.9.7, `py` still points at an old Streamlit.
 
 ### Public deployment (Streamlit Community Cloud)
 
-Deployed from this branch at share.streamlit.io with:
+Live at **https://mssp-analytics-dashboard.streamlit.app/**, deployed from this branch
+at share.streamlit.io with:
 
 | Setting | Value |
 |---|---|
 | Repository | `CORPUZ-2024/mssp_analytics` |
 | Branch | `streamlit-version` |
 | Main file path | `streamlit_dashboard/app.py` |
-| Python version (Advanced settings) | 3.11 |
+| Python version (Advanced settings) | 3.11 (the 3.14 default is too new for Streamlit 1.32) |
+| App URL | `mssp-analytics-dashboard` |
+
+The older app at https://msspanalytics.streamlit.app/ is a separate deployment of
+`src/app.py` from `main` (live CMS API, not the committed payload) and is unchanged.
 
 Community Cloud installs `streamlit_dashboard/requirements.txt` (it prefers the
 requirements file next to the entry point over the root one) and reads the theme from
