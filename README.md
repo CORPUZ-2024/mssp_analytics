@@ -6,6 +6,8 @@ analytical modules layered on top of it, and a static dashboard published to Git
 Pages.
 
 - **Dashboard:** https://corpuz-2024.github.io/mssp_analytics/
+- **Local Streamlit edition** (this branch): the same dashboard as a Streamlit app — see
+  [Run the dashboard locally (Streamlit)](#run-the-dashboard-locally-streamlit)
 - **Modules:** HCC / RADV risk-exposure flags &middot; shared savings and benchmark
   modelling &middot; CMS-0057-F prior authorization metrics
 
@@ -75,7 +77,8 @@ design notes that sit outside this README. See
 | `src/modules/pa_metrics_simulation/` | CMS-0057-F prior authorization metrics report |
 | `src/build_site.py` | build-time ETL that writes `docs/data/*.json` (the entry point CI runs) |
 | `docs/` | the published static site — `index.html`, `app.js`, `data/` |
-| `src/app.py` | the Streamlit app, kept as a local exploration tool |
+| `streamlit_dashboard/` | Streamlit port of the Pages dashboard (`app.py`, `requirements.txt`) — reads `docs/data/*.json` |
+| `src/app.py` | the original live-API Streamlit app, kept as a local exploration tool |
 | `src/cli.py` | standalone ETL CLI (`ingest`) for local CSV work |
 | `maintenance/` | operational and design notes (see [`maintenance/architecture.md`](maintenance/architecture.md)) |
 | `.github/workflows/` | `refresh-data.yml` (data) and `pages.yml` (deploy) |
@@ -83,6 +86,29 @@ design notes that sit outside this README. See
 The committed payload carries provenance — build timestamp, catalog source, and the
 exact dataset UUIDs and vintage labels used — in `docs/data/manifest.json`, and the
 dashboard renders it in a banner above the tabs.
+
+---
+
+## Run the dashboard locally (Streamlit)
+
+`streamlit_dashboard/app.py` is a port of the GitHub Pages dashboard (`docs/index.html`
++ `docs/app.js`) to Streamlit: the same three module tabs, sidebar filters and KPIs,
+charts, tables, provenance banner, and the same client-side recomputation of the V28
+index, RADV composite, benchmarks and MSR on the filtered selection. Like the Pages site
+it reads only the committed payload in `docs/data/` and makes no request to
+data.cms.gov, so it runs offline.
+
+Ensure Python 3.9+ is installed. From the repository root:
+
+```bash
+py -m pip install -r streamlit_dashboard/requirements.txt
+py -m streamlit run streamlit_dashboard/app.py
+```
+
+On Windows, double-clicking `run.bat` does the same launch. The app opens at
+<http://localhost:8501>. To refresh its data, rebuild the payload with
+`python -m src.build_site` (below) or pull the latest `docs/data/` from `main`; the app
+picks up the new files on the next rerun.
 
 ---
 
@@ -145,7 +171,8 @@ committed but not live until a subsequent push.
 ### Branches
 
 `master` and `main` are kept in sync and either can deploy. `feature/*` branches do not
-deploy; `streamlit-version` is the frozen pre-migration archive.
+deploy; `streamlit-version` tracks `main` and adds the local Streamlit edition in
+`streamlit_dashboard/` (neither workflow deploys from it).
 
 ---
 

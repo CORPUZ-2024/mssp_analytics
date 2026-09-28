@@ -1,3 +1,7 @@
+# Matches the light design tokens in docs/index.html.
 [theme]
-primaryColor = "#534AB7"
 base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#f9f9f7"
+secondaryBackgroundColor = "#fcfcfb"
+textColor = "#0b0b0b"
