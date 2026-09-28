@@ -77,7 +77,8 @@ design notes that sit outside this README. See
 | `src/modules/pa_metrics_simulation/` | CMS-0057-F prior authorization metrics report |
 | `src/build_site.py` | build-time ETL that writes `docs/data/*.json` (the entry point CI runs) |
 | `docs/` | the published static site — `index.html`, `app.js`, `data/` |
-| `streamlit_dashboard/` | Streamlit port of the Pages dashboard (`app.py`, `requirements.txt`) — reads `docs/data/*.json` |
+| `streamlit_dashboard/` | Streamlit port of the Pages dashboard (`app.py`, `requirements.txt`) — reads `docs/data/*.json`; see [Run the dashboard locally](#run-the-dashboard-locally-streamlit) |
+| `run.bat` | Windows launcher for the Streamlit dashboard |
 | `src/app.py` | the original live-API Streamlit app, kept as a local exploration tool |
 | `src/cli.py` | standalone ETL CLI (`ingest`) for local CSV work |
 | `maintenance/` | operational and design notes (see [`maintenance/architecture.md`](maintenance/architecture.md)) |
@@ -91,26 +92,81 @@ dashboard renders it in a banner above the tabs.
 
 ## Run the dashboard locally (Streamlit)
 
-`streamlit_dashboard/app.py` is a port of the GitHub Pages dashboard (`docs/index.html`
-+ `docs/app.js`) to Streamlit: the same three module tabs, sidebar filters and KPIs,
-charts, tables, provenance banner, and the same client-side recomputation of the V28
-index, RADV composite, benchmarks and MSR on the filtered selection. Like the Pages site
-it reads only the committed payload in `docs/data/` and makes no request to
-data.cms.gov, so it runs offline.
+This branch (`streamlit-version`) carries everything on `main` plus a Streamlit edition
+of the GitHub Pages dashboard that runs on your own machine.
 
-Requires Python 3.9+ **other than 3.9.7** — Streamlit excludes 3.9.7 from every release
-after 1.12. The pinned version is Streamlit 1.32.2. From the repository root:
+### What it is
+
+`streamlit_dashboard/app.py` is a port of the Pages dashboard (`docs/index.html` +
+`docs/app.js`) to Streamlit. It has:
+
+- **The same three module tabs:** A — HCC &amp; RADV risk flags, B — shared savings model,
+  C — PA metrics (CMS-0057-F), with Module C off by default behind a sidebar toggle.
+- **The same sidebar:** state and enrollment-type filters, plus per-tab controls (YoY
+  delta threshold; MSSP track, RAF band and V28 adjustment; service type) and summary
+  KPIs that follow the selected tab.
+- **The same charts, tables and text:** every chart, the ranked RADV table with its
+  column-definition tooltips, the RAF-band and PA-field tables, the key-finding panels,
+  and the provenance banner with source vintages.
+- **The same calculations:** the V28 exposure index, RADV composite and tiers, benchmarks,
+  shared savings and sliding MSR are recomputed on the filtered selection exactly as
+  `app.js` does. Its sidebar KPIs were checked against `app.js` on the same payload and
+  match.
+
+Like the Pages site, it reads only the committed payload in `docs/data/` and makes no
+request to data.cms.gov, so it runs offline.
+
+Differences from the Pages site: there is no theme button (the app is set to light in
+`.streamlit/config.toml`, matching the Pages colours; use Streamlit's own settings menu to
+switch), and the module tabs are a row of radio buttons at the top of the page.
+
+### Files
+
+| Path | Purpose |
+|---|---|
+| `streamlit_dashboard/app.py` | the Streamlit dashboard |
+| `streamlit_dashboard/requirements.txt` | its dependencies — Streamlit **1.32.2** (pinned), pandas, numpy, Plotly |
+| `.streamlit/config.toml` | light theme matching the Pages design tokens |
+| `run.bat` | Windows launcher — uses `.venv` when present, otherwise the `py` launcher |
+| `src/app.py` | the older live-API Streamlit app, unchanged |
+
+### Setup (first time)
+
+Requires Python 3.9+ **other than 3.9.7**: Streamlit excludes 3.9.7 from every release
+after 1.12.0, so `pip` cannot install 1.32 on it. Python 3.11 is recommended. On Windows
+it can be installed alongside an existing Python with:
 
 ```bash
+winget install --id Python.Python.3.11 -e --scope user
+```
+
+Then, from the repository root:
+
+```bash
+git checkout streamlit-version
 py -3.11 -m venv .venv
 .venv\Scripts\python -m pip install -r streamlit_dashboard/requirements.txt
+```
+
+`.venv/` is git-ignored.
+
+### Run
+
+Double-click `run.bat`, or from the repository root:
+
+```bash
 .venv\Scripts\python -m streamlit run streamlit_dashboard/app.py
 ```
 
-On Windows, double-clicking `run.bat` does the same launch (it uses `.venv` when present). The app opens at
-<http://localhost:8501>. To refresh its data, rebuild the payload with
-`python -m src.build_site` (below) or pull the latest `docs/data/` from `main`; the app
-picks up the new files on the next rerun.
+The app opens at <http://localhost:8501>. Use the venv's Python, not plain `py` — on a
+machine whose default is 3.9.7, `py` still points at an old Streamlit.
+
+### Refreshing the data
+
+The app shows whatever is in `docs/data/`. To update it, pull the latest `docs/data/`
+from `main` (the weekly "Refresh CMS data" workflow commits there), or rebuild it
+locally with `python -m src.build_site` (see below). The app picks up new files on the
+next rerun.
 
 ---
 
@@ -174,7 +230,8 @@ committed but not live until a subsequent push.
 
 `master` and `main` are kept in sync and either can deploy. `feature/*` branches do not
 deploy; `streamlit-version` tracks `main` and adds the local Streamlit edition in
-`streamlit_dashboard/` (neither workflow deploys from it).
+`streamlit_dashboard/`. Neither workflow runs on it, so pushing it publishes nothing, and
+its `docs/data/` only changes when `main` is merged in.
 
 ---
 
