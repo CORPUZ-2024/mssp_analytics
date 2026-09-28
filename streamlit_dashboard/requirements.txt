@@ -3,4 +3,5 @@
 streamlit==1.32.2
 pandas>=2.0.0
 numpy>=1.26.0
-plotly>=5.18.0
+# <6: Plotly 6+ sends base64 array data the Streamlit 1.32 frontend can't render.
+plotly>=5.18.0,<6

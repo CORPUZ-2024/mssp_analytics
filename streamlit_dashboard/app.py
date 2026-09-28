@@ -661,9 +661,12 @@ def render_module_a(rows: pd.DataFrame) -> None:
             if sub.empty:
                 continue
             traces.append(go.Scatter(
-                mode="markers", name=name, x=sub[use_col], y=sub["efficiency"],
-                customdata=np.stack([sub["countyName"] + ", " + sub["stateName"],
-                                     sub["enrollment"], sub["radvScore"].round(3)], axis=-1),
+                # Plain lists, not Series: Plotly >= 6 base64-encodes array data,
+                # which the plotly.js bundled with Streamlit 1.32 can't decode -
+                # the trace silently renders empty.
+                mode="markers", name=name, x=sub[use_col].tolist(), y=sub["efficiency"].tolist(),
+                customdata=list(zip((sub["countyName"] + ", " + sub["stateName"]).tolist(),
+                                    sub["enrollment"].tolist(), sub["radvScore"].round(3).tolist())),
                 marker=dict(color=color, symbol=symbol, size=6.5, opacity=0.78,
                             line=dict(width=1, color=T["surface"])),
                 hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}<br>"
