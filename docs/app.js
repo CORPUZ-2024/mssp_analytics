@@ -730,15 +730,21 @@ function renderModuleC(rows) {
 
     rightTitle.textContent = "Expedited vs. total request volume";
     rightCap.textContent = "Total request volume from ingested disclosures · source: external";
+    // Every payer reports volume, so this chart takes its labels from the full
+    // disclosure list. It used to reuse `payers` (the rated subset above) while
+    // drawing y from all disclosures -- Plotly paired them by position and
+    // dropped the extras, so "Health Net" showed Blue Shield's figures and
+    // "Wellcare" showed Health Net's.
+    const allPayers = disclosures.map((d) => d.enrollment_type);
     draw("chart-c-right", [
       {
-        type: "bar", name: "Total requests", x: payers,
+        type: "bar", name: "Total requests", x: allPayers,
         y: disclosures.map((d) => d.total_requests),
         marker: { color: t.s1, line: { width: 2, color: t.surface } },
         hovertemplate: "%{x}<br>%{y:,} total<extra></extra>"
       },
       {
-        type: "bar", name: "Expedited requests", x: payers,
+        type: "bar", name: "Expedited requests", x: allPayers,
         y: disclosures.map((d) => d.expedited_requests),
         marker: { color: t.s3, line: { width: 2, color: t.surface } },
         hovertemplate: "%{x}<br>%{y:,} expedited<extra></extra>"
