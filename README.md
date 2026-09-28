@@ -113,8 +113,37 @@ of the GitHub Pages dashboard that runs on your own machine.
   `app.js` does. Its sidebar KPIs were checked against `app.js` on the same payload and
   match.
 
-Like the Pages site, it reads only the committed payload in `docs/data/` and makes no
-request to data.cms.gov, so it runs offline.
+### Where its data comes from
+
+By default the app reads `docs/data/` **from the `main` branch on GitHub** — the exact
+files the Pages site is built from — pinned to the latest commit that touched
+`docs/data/`, so all four payload files always come from the same build. When the weekly
+refresh lands on `main`, the app picks it up within 15 minutes; this branch never needs a
+merge to stay current. Like the Pages site, it makes no request to data.cms.gov.
+
+If GitHub cannot be reached, the app falls back to the copy of `docs/data/` committed on
+this branch and says so in an amber banner. Two optional settings (environment variables,
+or Community Cloud secrets) change this:
+
+| Setting | Default | Effect |
+|---|---|---|
+| `MSSP_DATA_SOURCE` | `main` | `local` reads this branch's `docs/data/` only (fully offline) |
+| `MSSP_DATA_REF` | `main` | branch, tag or commit to read the payload from |
+
+### Comparing it with the Pages site
+
+The provenance banner at the top of both apps shows the build date, row, county and
+state counts. The Streamlit banner also shows the `main` commit the payload came from and
+a **payload fingerprint** (first 12 hex digits of the SHA-256 of `counties.json`). To
+confirm both are on identical data:
+
+```bash
+git fetch origin
+git show origin/main:docs/data/counties.json | sha256sum | cut -c1-12
+```
+
+With the same filters selected, the sidebar KPIs, charts and tables should then match
+the Pages site exactly.
 
 Differences from the Pages site: there is no theme button (the app is set to light in
 `.streamlit/config.toml`, matching the Pages colours; use Streamlit's own settings menu to
@@ -161,12 +190,21 @@ Double-click `run.bat`, or from the repository root:
 The app opens at <http://localhost:8501>. Use the venv's Python, not plain `py` — on a
 machine whose default is 3.9.7, `py` still points at an old Streamlit.
 
-### Refreshing the data
+### Public deployment (Streamlit Community Cloud)
 
-The app shows whatever is in `docs/data/`. To update it, pull the latest `docs/data/`
-from `main` (the weekly "Refresh CMS data" workflow commits there), or rebuild it
-locally with `python -m src.build_site` (see below). The app picks up new files on the
-next rerun.
+Deployed from this branch at share.streamlit.io with:
+
+| Setting | Value |
+|---|---|
+| Repository | `CORPUZ-2024/mssp_analytics` |
+| Branch | `streamlit-version` |
+| Main file path | `streamlit_dashboard/app.py` |
+| Python version (Advanced settings) | 3.11 |
+
+Community Cloud installs `streamlit_dashboard/requirements.txt` (it prefers the
+requirements file next to the entry point over the root one) and reads the theme from
+`.streamlit/config.toml`. No secrets are needed. The deployed app follows `main`'s
+payload automatically, as described above; pushing to this branch redeploys the code.
 
 ---
 
@@ -231,7 +269,8 @@ committed but not live until a subsequent push.
 `master` and `main` are kept in sync and either can deploy. `feature/*` branches do not
 deploy; `streamlit-version` tracks `main` and adds the local Streamlit edition in
 `streamlit_dashboard/`. Neither workflow runs on it, so pushing it publishes nothing, and
-its `docs/data/` only changes when `main` is merged in.
+the Streamlit app reads its payload from `main` at runtime, so it tracks `main`'s data
+without a merge.
 
 ---
 
