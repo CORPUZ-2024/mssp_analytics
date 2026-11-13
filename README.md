@@ -123,9 +123,9 @@ of the GitHub Pages dashboard that runs on your own machine.
 
 By default the app reads `docs/data/` **from the `main` branch on GitHub** — the exact
 files the Pages site is built from — pinned to the latest commit that touched
-`docs/data/`, so all four payload files always come from the same build. When the weekly
-refresh lands on `main`, the app picks it up within 15 minutes; this branch never needs a
-merge to stay current. Like the Pages site, it makes no request to data.cms.gov.
+`docs/data/`, so all four payload files always come from the same build. When a manually
+rebuilt payload is committed to `main`, the app picks it up within 15 minutes; this branch
+never needs a merge to stay current. Like the Pages site, it makes no request to data.cms.gov.
 
 If GitHub cannot be reached, the app falls back to the copy of `docs/data/` committed on
 this branch and says so in an amber banner. Two optional settings (environment variables,
@@ -290,7 +290,7 @@ true`, so overlapping pushes collapse to the latest.
 
 `master` and `main` are kept in sync and either can deploy. `feature/*` branches do not
 deploy; `streamlit-version` tracks `main` and adds the local Streamlit edition in
-`streamlit_dashboard/`. Neither workflow runs on it, so pushing it publishes nothing, and
+`streamlit_dashboard/`. The Pages workflow does not run on it, so pushing it publishes nothing, and
 the Streamlit app reads its payload from `main` at runtime, so it tracks `main`'s data
 without a merge.
 
