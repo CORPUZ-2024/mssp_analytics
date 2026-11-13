@@ -1,8 +1,9 @@
 # Publish docs/ to GitHub Pages.
 #
-# Deliberately decoupled from the CMS refresh: this job only copies files that
-# are already committed. It has no network dependency on data.cms.gov, so a
-# deploy can never fail because an upstream API moved.
+# This job only copies files that are already committed. It has no network
+# dependency on data.cms.gov, so a deploy can never fail because an upstream API
+# moved. The payload under docs/data/ is rebuilt manually (python -m
+# src.build_site) and committed; there is no scheduled data pull.
 name: Deploy Pages
 
 on:

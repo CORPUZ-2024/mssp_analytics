@@ -5,7 +5,8 @@ from __future__ import annotations
 Design contract
 ---------------
 The published page must never talk to data.cms.gov.  All CMS access happens
-here, at build time, in CI.  The build writes versioned JSON into ``docs/data/``
+here, at build time, when a maintainer runs this script.  There is no scheduled
+or automatic pull: refreshing the data is a manual step.  The build writes versioned JSON into ``docs/data/``
 which is committed to the repository and served by GitHub Pages.  Consequences:
 
 * A CMS URL change, UUID rotation, schema change or outage can fail *the build*.
@@ -15,7 +16,7 @@ which is committed to the repository and served by GitHub Pages.  Consequences:
 
 The build is transactional: data is staged to a temporary directory, run through
 quality gates, and only then swapped into ``docs/data/``.  A failed gate leaves
-the previous payload untouched and exits non-zero so CI reports the failure.
+the previous payload untouched and exits non-zero so the failure is reported.
 
 Usage::
 

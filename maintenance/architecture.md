@@ -21,7 +21,12 @@ ways at once, and only one of them produced a visible error:
 
 ## Build-time data flow
 
-All CMS access now happens at build time, in CI, and the result is committed:
+All CMS access now happens at build time, when a maintainer runs
+`python -m src.build_site` locally, and the result is committed. Per the project's scope
+the dashboard is a point-in-time analysis of that committed payload: there is **no
+scheduled or automatic data pull**. An earlier weekly GitHub Actions refresh
+(`refresh-data.yml`) was removed; refreshing the data is a deliberate manual step (see
+[Refreshing the data](../README.md#refreshing-the-data)).
 
 ```
 data.cms.gov/data.json ──▶ src/etl/catalog.py   title ──▶ current dataset UUIDs
@@ -29,7 +34,7 @@ data.cms.gov/data-api  ──▶ src/etl/client.py    fetch, paginate, wide─�
                            src/etl/{ingest,enrich}.py   normalise, coerce, flag
                            src/build_site.py    YoY + OC deltas, quality gates, atomic publish
                                   │
-                                  ▼  (committed to git by CI)
+                                  ▼  (committed to git by the maintainer)
                            docs/data/*.json   counties · oc_stability · reference · manifest
                                   │
                                   ▼  (static fetch, no API)

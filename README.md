@@ -47,12 +47,17 @@ public payer prior-authorization disclosures; the rest of that module is modelle
 
 ## Architecture
 
-All CMS access happens at build time, in CI. `src/build_site.py` resolves the current
-dataset endpoints from the CMS DCAT catalog, fetches and reshapes the vintages, enforces
-a set of quality gates, and commits the result as static JSON under `docs/data/`. The
+All CMS access happens at build time, when a maintainer runs `src/build_site.py`
+locally. It resolves the current dataset endpoints from the CMS DCAT catalog, fetches and
+reshapes the vintages, enforces a set of quality gates, and writes the result as static
+JSON under `docs/data/` for the maintainer to commit. The
 published page fetches only those committed files, so an upstream outage, URL change or
 schema change can fail a build but cannot blank the dashboard — it keeps serving the last
 payload that passed the gates.
+
+**There is no automatic data pull.** Per the project's scope, the dashboard is a
+point-in-time analysis of the committed payload; the data changes only when a maintainer
+rebuilds and commits it (see [Refreshing the data](#refreshing-the-data)).
 
 The full account — the original browser-side failure modes that motivated this design,
 the data-flow diagram, the five upstream-failure guards, and the quality-gate
@@ -73,12 +78,12 @@ design notes that sit outside this README. See
 | `src/modules/hcc_radv_risk_flags/` | V28 / RADV exposure index and flags |
 | `src/modules/shared_savings_model/` | benchmark-version skew, shared-savings calculator |
 | `src/modules/pa_metrics_simulation/` | CMS-0057-F prior authorization metrics report |
-| `src/build_site.py` | build-time ETL that writes `docs/data/*.json` (the entry point CI runs) |
+| `src/build_site.py` | build-time ETL that writes `docs/data/*.json` (run manually to refresh the data) |
 | `docs/` | the published static site — `index.html`, `app.js`, `data/` |
 | `src/app.py` | the Streamlit app, kept as a local exploration tool |
 | `src/cli.py` | standalone ETL CLI (`ingest`) for local CSV work |
 | `maintenance/` | operational and design notes (see [`maintenance/architecture.md`](maintenance/architecture.md)) |
-| `.github/workflows/` | `refresh-data.yml` (data) and `pages.yml` (deploy) |
+| `.github/workflows/` | `pages.yml` (deploy only; there is no data-refresh workflow) |
 
 The committed payload carries provenance — build timestamp, catalog source, and the
 exact dataset UUIDs and vintage labels used — in `docs/data/manifest.json`, and the
@@ -114,6 +119,26 @@ python -m src.cli ingest --input raw/mssp_puf.csv --output clean/mssp_puf_clean.
 
 ---
 
+## Refreshing the data
+
+Data pulls are manual: no workflow or schedule queries the CMS Data API. (The legacy
+`src/app.py` exploration app is the one exception — it calls the API live when opened —
+and it does not feed the dashboard.) To move the dashboard to a newer CMS release:
+
+```bash
+python -m src.build_site --check-only   # confirm upstream passes the quality gates
+python -m src.build_site                # rebuild docs/data/ and data/cms_catalog.json
+git add docs/data data/cms_catalog.json
+git commit -m "Refresh CMS payload (PYxxxx)"
+git push origin main                    # then bring master in line with main
+```
+
+Because the commit is user-authored and touches `docs/`, the push triggers `pages.yml`
+and the refreshed payload goes live. If a gate fails, `docs/data/` is left untouched and
+the dashboard keeps serving the previous payload.
+
+---
+
 ## Workflow &amp; deployment
 
 ### GitHub Pages configuration
@@ -127,20 +152,11 @@ python -m src.cli ingest --input raw/mssp_puf.csv --output clean/mssp_puf_clean.
 
 | Workflow | Triggers | On failure |
 |---|---|---|
-| `refresh-data.yml` | weekly cron, manual dispatch, or a push to `master` / `main` touching `src/etl/**`, `src/build_site.py`, `src/modules/**`, `disclosures_metrics.csv`, or the workflow file | Leaves `docs/data/` untouched, fails the run, and opens (once) a `data-refresh` issue. The page stays up on the previous payload. |
 | `pages.yml` | a push to `master` / `main` touching `docs/**` or the workflow file; or manual dispatch | Verifies the payload files exist, parse, and are not thin (`>= 8,000` county rows) **before** deploying. A bad payload fails the job instead of publishing. |
 
-Both filter on `branches: [master, main]`, so the branch a payload is pushed to is the
-branch that deploys. `pages.yml` uses `concurrency: group: pages, cancel-in-progress:
+`pages.yml` filters on `branches: [master, main]`, so the branch a payload is pushed to
+is the branch that deploys. `pages.yml` uses `concurrency: group: pages, cancel-in-progress:
 true`, so overlapping pushes collapse to the latest.
-
-### Data-refresh propagation
-
-`refresh-data.yml` rebuilds `docs/data/` and commits it with the built-in `GITHUB_TOKEN`.
-GitHub's anti-recursion rule means that bot commit does not trigger `pages.yml`. The
-deploy fires on the next user-authored commit under `docs/`, or a manual
-`workflow_dispatch` of "Deploy Pages". After an automated refresh the new data is
-committed but not live until a subsequent push.
 
 ### Branches
 
@@ -153,9 +169,10 @@ deploy; `streamlit-version` is the frozen pre-migration archive.
 
 **Data / freshness**
 
-- **A stale page looks identical to a fresh one.** The dashboard renders whatever passed
-  the gates last; the provenance banner (built-at date, vintage labels) indicates how
-  current that is.
+- **The data is a snapshot.** There is no automatic refresh, so the dashboard shows the
+  last payload a maintainer built and committed, even after CMS publishes a newer
+  release. The provenance banner (built-at date, vintage labels) indicates how current
+  that is.
 - **YoY deltas need two `FINAL` years** in the catalog. **OC-stability needs operational
   cuts** published for the latest year; if none exist that panel is empty (the manifest
   records `oc_stability_available: false`).
@@ -166,8 +183,6 @@ deploy; `streamlit-version` is the frozen pre-migration archive.
 
 - The `github-pages` environment's **deployment-branch rule** can silently block a deploy
   from `main` even when the workflow trigger is correct — see configuration above.
-- After an automated data refresh, the page is **not live until a user-authored push**
-  under `docs/` (anti-recursion rule above).
 
 **Modelling assumptions**
 
