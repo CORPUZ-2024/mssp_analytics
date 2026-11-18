@@ -1,0 +1,283 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1602" height="1315" viewBox="0 0 1602 1315" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<title>src.etl — class diagram</title>
+<style>
+.bg{fill:#ffffff}
+.box{fill:#ffffff;stroke:#3b3b52;stroke-width:1.2}
+.sep{stroke:#3b3b52;stroke-width:1}
+.h-class{fill:#ecebfa}.h-module{fill:#e4f2e9}.h-ext{fill:#fcecd6}.h-art{fill:#e9eef5}
+.h-exc{fill:#fbe3e3}.h-data{fill:#e3eefb}.h-prog{fill:#efe6f8}.h-pkg{fill:#f1f1f1}.h-wf{fill:#fff3c9}
+.name{font:600 13px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#1d1d2c}
+.stereo{font:italic 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#55556b}
+.mem{font:11px Consolas,Menlo,'DejaVu Sans Mono',monospace;fill:#25253a}
+.cap{font:italic 10px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#6b6b80}
+.edge{fill:none;stroke:#4a4a64;stroke-width:1.25}
+.dash{stroke-dasharray:6 4}
+.ah-fill{fill:#4a4a64;stroke:#4a4a64}
+.ah-open{fill:none;stroke:#4a4a64;stroke-width:1.25}
+.ah-hollow{fill:#ffffff;stroke:#4a4a64;stroke-width:1.25}
+.lbl{font:11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#34344c;paint-order:stroke;stroke:#ffffff;stroke-width:4px;stroke-linejoin:round}
+.frame{fill:#fafafc;stroke:#8f8fa6;stroke-width:1}
+.ftab{fill:#ececf3;stroke:#8f8fa6;stroke-width:1}
+.ftitle{font:600 12px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#3c3c54}
+.title{font:600 19px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#1d1d2c}
+.sub{font:12px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#62627a}
+.note{fill:#fff9df;stroke:#b5a35a;stroke-width:1}
+.notetxt{font:11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#4a4326}
+.life{stroke:#8f8fa6;stroke-width:1;stroke-dasharray:5 4}
+.act{fill:#ecebfa;stroke:#3b3b52;stroke-width:1}
+.frag{fill:none;stroke:#6b6b84;stroke-width:1}
+.fragtab{fill:#ececf3;stroke:#6b6b84;stroke-width:1}
+.fragtxt{font:600 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#3c3c54}
+.guard{font:italic 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#3c3c54}
+.actor{fill:none;stroke:#3b3b52;stroke-width:1.4}
+@media (prefers-color-scheme: dark){
+.bg{fill:#17171f}
+.box{fill:#20202b;stroke:#b9b9cf}.sep{stroke:#b9b9cf}
+.h-class{fill:#33305a}.h-module{fill:#22402f}.h-ext{fill:#4a3618}.h-art{fill:#26364a}
+.h-exc{fill:#4d2626}.h-data{fill:#203a57}.h-prog{fill:#3b2a52}.h-pkg{fill:#2c2c38}.h-wf{fill:#4a4019}
+.name{fill:#ececf6}.stereo{fill:#b4b4c8}.mem{fill:#dcdcea}.cap{fill:#a4a4ba}
+.edge{stroke:#b4b4cc}.ah-fill{fill:#b4b4cc;stroke:#b4b4cc}.ah-open{stroke:#b4b4cc}
+.ah-hollow{fill:#17171f;stroke:#b4b4cc}
+.lbl{fill:#d8d8e8;stroke:#17171f}
+.frame{fill:#1c1c26;stroke:#5e5e78}.ftab{fill:#2a2a38;stroke:#5e5e78}.ftitle{fill:#cfcfe2}
+.title{fill:#f0f0f8}.sub{fill:#a4a4ba}
+.note{fill:#3a3520;stroke:#8a7b3c}.notetxt{fill:#eadfb0}
+.life{stroke:#5e5e78}.act{fill:#33305a;stroke:#b9b9cf}
+.frag{stroke:#8a8aa6}.fragtab{fill:#2a2a38;stroke:#8a8aa6}.fragtxt,.guard{fill:#cfcfe2}
+.actor{stroke:#d0d0e2}
+}
+</style>
+<defs>
+ <marker id="open" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+  <path class="ah-open" d="M1,1 L11,6 L1,11"/></marker>
+ <marker id="fill" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+  <path class="ah-fill" d="M1,1.5 L11,6 L1,10.5 z"/></marker>
+ <marker id="tri" viewBox="0 0 16 16" refX="15" refY="8" markerWidth="16" markerHeight="16" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+  <path class="ah-hollow" d="M1,1 L15,8 L1,15 z"/></marker>
+ <marker id="diamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto" markerUnits="userSpaceOnUse">
+  <path class="ah-fill" d="M1,6 L10,1 L19,6 L10,11 z"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<text x="30.0" y="36.0" class="title" text-anchor="start">src.etl — class diagram</text><text x="30.0" y="56.0" class="sub" text-anchor="start">Classes in the ETL package. + public, − private. Upstream access is used only by src/build_site.py (and the legacy src/app.py).</text>
+<rect class="ftab" x="30" y="90" width="307" height="20"/><rect class="frame" x="30" y="110" width="1347.45" height="384"/><text x="40.0" y="104.0" class="ftitle" text-anchor="start">Upstream access  (catalog.py · client.py)</text>
+<rect class="ftab" x="30" y="534" width="727" height="20"/><rect class="frame" x="30" y="554" width="1542.8" height="731"/><text x="40.0" y="548.0" class="ftitle" text-anchor="start">Normalise · validate · report  (ingest, enrich, validate, cleaning, reporting, pipeline, disclosures)</text>
+<path class="edge" d="M293.0,189.0 L223.0,189.0" marker-start="url(#diamond)"/>
+<path class="edge dash" d="M742.1,351.0 L742.1,358.0 L136.5,358.0 L136.5,323.0" marker-end="url(#open)"/>
+<path class="edge dash" d="M1094.7,186.5 L1034.7,186.5" marker-end="url(#open)"/>
+<path class="edge dash" d="M1221.1,140.0 L1221.1,124.0 L547.4,124.0 L547.4,140.0" marker-end="url(#open)"/>
+<path class="edge dash" d="M446.2,386.0 L446.2,336.0" marker-end="url(#open)"/>
+<path class="edge dash" d="M1221.1,233.0 L1221.1,303.0" marker-end="url(#open)"/>
+<path class="edge" d="M858.6,401.0 L858.6,351.0" marker-end="url(#tri)"/>
+<path class="edge" d="M624.1,760.0 L624.1,794.0" marker-start="url(#diamond)"/>
+<path class="edge" d="M169.7,794 L1098.5,794"/>
+<path class="edge" d="M169.7,794.0 L169.7,828.0" marker-end="url(#open)"/>
+<path class="edge" d="M415.2,794.0 L415.2,828.0" marker-end="url(#open)"/>
+<path class="edge" d="M634.1,794.0 L634.1,828.0" marker-end="url(#open)"/>
+<path class="edge" d="M863.0,794.0 L863.0,828.0" marker-end="url(#open)"/>
+<path class="edge" d="M1098.5,794.0 L1098.5,828.0" marker-end="url(#open)"/>
+<path class="edge dash" d="M628.2,1029.0 L628.2,947.0" marker-end="url(#open)"/>
+<path class="edge dash" d="M1384.7,1002.0 L1384.7,1062.0" marker-end="url(#open)"/>
+<g><rect class="box" x="50.0" y="160.0" width="173.0" height="163.0" rx="2"/>
+<rect class="h-data" x="50.6" y="160.6" width="171.8" height="37.4"/>
+<text x="136.5" y="175.0" class="stereo" text-anchor="middle">«dataclass» frozen</text>
+<text x="136.5" y="191.0" class="name" text-anchor="middle">Vintage</text>
+<line class="sep" x1="50.0" y1="198.0" x2="223.0" y2="198.0"/>
+<text x="60.0" y="214.5" class="mem" text-anchor="start">+year: int</text>
+<text x="60.0" y="229.5" class="mem" text-anchor="start">+data_cut: str</text>
+<text x="60.0" y="244.5" class="mem" text-anchor="start">+dataset_id: str</text>
+<text x="60.0" y="259.5" class="mem" text-anchor="start">+label: str</text>
+<text x="60.0" y="274.5" class="mem" text-anchor="start">+api_url: str</text>
+<text x="60.0" y="289.5" class="mem" text-anchor="start">+csv_url: str | None</text>
+<line class="sep" x1="50.0" y1="298.0" x2="223.0" y2="298.0"/>
+<text x="60.0" y="314.5" class="mem" text-anchor="start">+key(): tuple[int, str]</text>
+</g>
+<g><rect class="box" x="293.0" y="140.0" width="339.2" height="196.0" rx="2"/>
+<rect class="h-class" x="293.6" y="140.6" width="338.0" height="25.4"/>
+<text x="462.6" y="158.0" class="name" text-anchor="middle">CMSCatalog</text>
+<line class="sep" x1="293.0" y1="166.0" x2="632.2" y2="166.0"/>
+<text x="303.0" y="182.5" class="mem" text-anchor="start">+fetched_at: str</text>
+<text x="303.0" y="197.5" class="mem" text-anchor="start">+source: str  # &quot;live&quot; | &quot;cache&quot;</text>
+<line class="sep" x1="293.0" y1="206.0" x2="632.2" y2="206.0"/>
+<text x="303.0" y="222.5" class="mem" text-anchor="start">+load(cache_path, allow_network): CMSCatalog</text>
+<text x="303.0" y="237.5" class="mem" text-anchor="start">+from_network(title): CMSCatalog</text>
+<text x="303.0" y="252.5" class="mem" text-anchor="start">+from_cache(path): CMSCatalog</text>
+<text x="303.0" y="267.5" class="mem" text-anchor="start">+save(path)</text>
+<text x="303.0" y="282.5" class="mem" text-anchor="start">+vintage(year, data_cut=&quot;FINAL&quot;): Vintage | None</text>
+<text x="303.0" y="297.5" class="mem" text-anchor="start">+years(): list[int]</text>
+<text x="303.0" y="312.5" class="mem" text-anchor="start">+latest_years(n=2, data_cut): list[int]</text>
+<text x="303.0" y="327.5" class="mem" text-anchor="start">+cuts_for_year(year): list[str]</text>
+</g>
+<g><rect class="box" x="702.2" y="140.0" width="332.6" height="211.0" rx="2"/>
+<rect class="h-class" x="702.8" y="140.6" width="331.4" height="25.4"/>
+<text x="868.4" y="158.0" class="name" text-anchor="middle">CMSDataClient</text>
+<line class="sep" x1="702.2" y1="166.0" x2="1034.7" y2="166.0"/>
+<text x="712.2" y="182.5" class="mem" text-anchor="start">+dataset_id: str</text>
+<text x="712.2" y="197.5" class="mem" text-anchor="start">+expected_year: int</text>
+<text x="712.2" y="212.5" class="mem" text-anchor="start">+data_cut: str</text>
+<text x="712.2" y="227.5" class="mem" text-anchor="start">+app_token: str | None</text>
+<text x="712.2" y="242.5" class="mem" text-anchor="start">+base_url: str</text>
+<line class="sep" x1="702.2" y1="251.0" x2="1034.7" y2="251.0"/>
+<text x="712.2" y="267.5" class="mem" text-anchor="start">+for_vintage(vintage, app_token): CMSDataClient</text>
+<text x="712.2" y="282.5" class="mem" text-anchor="start">+fetch_page(limit, offset): list[dict]</text>
+<text x="712.2" y="297.5" class="mem" text-anchor="start">+fetch_all(page_size): list[dict]</text>
+<text x="712.2" y="312.5" class="mem" text-anchor="start">+fetch_to_dataframe(page_size): DataFrame</text>
+<text x="712.2" y="327.5" class="mem" text-anchor="start">−_assert_expected_year(rows)</text>
+<text x="712.2" y="342.5" class="mem" text-anchor="start">−_reshape_wide_to_long(df): DataFrame</text>
+</g>
+<g><rect class="box" x="1094.7" y="140.0" width="252.8" height="93.0" rx="2"/>
+<rect class="h-module" x="1095.3" y="140.6" width="251.6" height="37.4"/>
+<text x="1221.1" y="155.0" class="stereo" text-anchor="middle">«function»</text>
+<text x="1221.1" y="171.0" class="name" text-anchor="middle">client.fetch_vintages</text>
+<line class="sep" x1="1094.7" y1="178.0" x2="1347.5" y2="178.0"/>
+<text x="1104.7" y="194.5" class="mem" text-anchor="start">fetch_vintages(catalog, requests_,</text>
+<text x="1104.7" y="209.5" class="mem" text-anchor="start">    app_token=None, required=False)</text>
+<text x="1104.7" y="224.5" class="mem" text-anchor="start">    : DataFrame</text>
+</g>
+<g><rect class="box" x="363.0" y="386.0" width="166.4" height="38.0" rx="2"/>
+<rect class="h-exc" x="363.6" y="386.6" width="165.2" height="37.4"/>
+<text x="446.2" y="401.0" class="stereo" text-anchor="middle">«exception» RuntimeError</text>
+<text x="446.2" y="417.0" class="name" text-anchor="middle">CatalogError</text>
+</g>
+<g><rect class="box" x="1104.7" y="303.0" width="166.4" height="38.0" rx="2"/>
+<rect class="h-exc" x="1105.3" y="303.6" width="165.2" height="37.4"/>
+<text x="1187.9" y="318.0" class="stereo" text-anchor="middle">«exception» RuntimeError</text>
+<text x="1187.9" y="334.0" class="name" text-anchor="middle">UpstreamDataError</text>
+</g>
+<g><rect class="box" x="742.2" y="401.0" width="232.8" height="63.0" rx="2"/>
+<rect class="h-class" x="742.8" y="401.6" width="231.6" height="37.4"/>
+<text x="858.6" y="416.0" class="stereo" text-anchor="middle">«deprecated alias»</text>
+<text x="858.6" y="432.0" class="name" text-anchor="middle">CMSSodaClient</text>
+<line class="sep" x1="742.2" y1="439.0" x2="975.0" y2="439.0"/>
+<text x="752.2" y="455.5" class="mem" text-anchor="start">+__init__(dataset_id=None, **kw)</text>
+</g>
+<g><rect class="box" x="484.5" y="594.0" width="279.4" height="166.0" rx="2"/>
+<rect class="h-class" x="485.1" y="594.6" width="278.2" height="25.4"/>
+<text x="624.1" y="612.0" class="name" text-anchor="middle">DataIngestionPipeline</text>
+<line class="sep" x1="484.5" y1="620.0" x2="763.8" y2="620.0"/>
+<text x="494.5" y="636.5" class="mem" text-anchor="start">+ingestor: DataIngestor</text>
+<text x="494.5" y="651.5" class="mem" text-anchor="start">+enricher: DataEnricher</text>
+<text x="494.5" y="666.5" class="mem" text-anchor="start">+validator: DataValidator</text>
+<text x="494.5" y="681.5" class="mem" text-anchor="start">+cleaner: DataCleaner</text>
+<text x="494.5" y="696.5" class="mem" text-anchor="start">+reporter: PipelineReporter</text>
+<line class="sep" x1="484.5" y1="705.0" x2="763.8" y2="705.0"/>
+<text x="494.5" y="721.5" class="mem" text-anchor="start">+run(source_path, output_path, qa_path,</text>
+<text x="494.5" y="736.5" class="mem" text-anchor="start">    dataset_id=None): DataFrame</text>
+<text x="494.5" y="751.5" class="mem" text-anchor="start">+preview(source_path, n=10): DataFrame</text>
+</g>
+<g><rect class="box" x="50.0" y="828.0" width="239.5" height="151.0" rx="2"/>
+<rect class="h-class" x="50.6" y="828.6" width="238.3" height="25.4"/>
+<text x="169.7" y="846.0" class="name" text-anchor="middle">DataIngestor</text>
+<line class="sep" x1="50.0" y1="854.0" x2="289.5" y2="854.0"/>
+<text x="60.0" y="870.5" class="mem" text-anchor="start">+csv_kwargs: dict</text>
+<line class="sep" x1="50.0" y1="879.0" x2="289.5" y2="879.0"/>
+<text x="60.0" y="895.5" class="mem" text-anchor="start">+load(path): DataFrame</text>
+<text x="60.0" y="910.5" class="mem" text-anchor="start">+process_dataframe(df): DataFrame</text>
+<text x="60.0" y="925.5" class="mem" text-anchor="start">−_read(path)</text>
+<text x="60.0" y="940.5" class="mem" text-anchor="start">−_normalize_columns(df)</text>
+<text x="60.0" y="955.5" class="mem" text-anchor="start">−_coerce_dtypes(df)</text>
+<text x="60.0" y="970.5" class="mem" text-anchor="start">−_add_raw_observations(df)</text>
+</g>
+<g><rect class="box" x="315.5" y="828.0" width="199.6" height="134.0" rx="2"/>
+<rect class="h-class" x="316.1" y="828.6" width="198.4" height="25.4"/>
+<text x="415.2" y="846.0" class="name" text-anchor="middle">DataEnricher</text>
+<line class="sep" x1="315.5" y1="854.0" x2="515.0" y2="854.0"/>
+<line class="sep" x1="315.5" y1="862.0" x2="515.0" y2="862.0"/>
+<text x="325.5" y="878.5" class="mem" text-anchor="start">+enrich(df): DataFrame</text>
+<text x="325.5" y="893.5" class="mem" text-anchor="start">−_normalize_strings(df)</text>
+<text x="325.5" y="908.5" class="mem" text-anchor="start">−_flag_state_membership(df)</text>
+<text x="325.5" y="923.5" class="mem" text-anchor="start">−_add_pilot_flags(df)</text>
+<text x="325.5" y="938.5" class="mem" text-anchor="start">−_team_hash_proxy(df)</text>
+<text x="325.5" y="953.5" class="mem" text-anchor="start">−_add_efficiency_ratio(df)</text>
+</g>
+<g><rect class="box" x="541.0" y="828.0" width="186.2" height="119.0" rx="2"/>
+<rect class="h-class" x="541.6" y="828.6" width="185.1" height="25.4"/>
+<text x="634.1" y="846.0" class="name" text-anchor="middle">DataValidator</text>
+<line class="sep" x1="541.0" y1="854.0" x2="727.2" y2="854.0"/>
+<line class="sep" x1="541.0" y1="862.0" x2="727.2" y2="862.0"/>
+<text x="551.0" y="878.5" class="mem" text-anchor="start">+validate(df)</text>
+<text x="551.0" y="893.5" class="mem" text-anchor="start">+validate_schema(df)</text>
+<text x="551.0" y="908.5" class="mem" text-anchor="start">+validate_dtypes(df)</text>
+<text x="551.0" y="923.5" class="mem" text-anchor="start">+validate_ranges(df)</text>
+<text x="551.0" y="938.5" class="mem" text-anchor="start">+validate_key_columns(df)</text>
+</g>
+<g><rect class="box" x="753.2" y="828.0" width="219.5" height="104.0" rx="2"/>
+<rect class="h-class" x="753.9" y="828.6" width="218.3" height="25.4"/>
+<text x="863.0" y="846.0" class="name" text-anchor="middle">DataCleaner</text>
+<line class="sep" x1="753.2" y1="854.0" x2="972.8" y2="854.0"/>
+<line class="sep" x1="753.2" y1="862.0" x2="972.8" y2="862.0"/>
+<text x="763.2" y="878.5" class="mem" text-anchor="start">+mark_conflicts(df): DataFrame</text>
+<text x="763.2" y="893.5" class="mem" text-anchor="start">+deduplicate(df): DataFrame</text>
+<text x="763.2" y="908.5" class="mem" text-anchor="start">+generate_qa_artifacts(...)</text>
+<text x="763.2" y="923.5" class="mem" text-anchor="start">−_effective_dedup_subset(df)</text>
+</g>
+<g><rect class="box" x="998.8" y="828.0" width="199.6" height="89.0" rx="2"/>
+<rect class="h-class" x="999.4" y="828.6" width="198.4" height="25.4"/>
+<text x="1098.5" y="846.0" class="name" text-anchor="middle">PipelineReporter</text>
+<line class="sep" x1="998.8" y1="854.0" x2="1198.3" y2="854.0"/>
+<line class="sep" x1="998.8" y1="862.0" x2="1198.3" y2="862.0"/>
+<text x="1008.8" y="878.5" class="mem" text-anchor="start">+write_api_call_report(...)</text>
+<text x="1008.8" y="893.5" class="mem" text-anchor="start">+read_report(output_dir)</text>
+<text x="1008.8" y="908.5" class="mem" text-anchor="start">    : list[dict]</text>
+</g>
+<g><rect class="box" x="554.1" y="1029.0" width="148.1" height="38.0" rx="2"/>
+<rect class="h-exc" x="554.7" y="1029.6" width="146.9" height="37.4"/>
+<text x="628.2" y="1044.0" class="stereo" text-anchor="middle">«exception» Exception</text>
+<text x="628.2" y="1060.0" class="name" text-anchor="middle">ValidationError</text>
+</g>
+<g><rect class="box" x="1248.3" y="594.0" width="206.2" height="207.0" rx="2"/>
+<rect class="h-module" x="1248.9" y="594.6" width="205.0" height="37.4"/>
+<text x="1351.4" y="609.0" class="stereo" text-anchor="middle">«module»</text>
+<text x="1351.4" y="625.0" class="name" text-anchor="middle">config / constants</text>
+<line class="sep" x1="1248.3" y1="632.0" x2="1454.5" y2="632.0"/>
+<text x="1258.3" y="648.5" class="mem" text-anchor="start">REQUIRED_COLUMNS</text>
+<text x="1258.3" y="663.5" class="mem" text-anchor="start">NUMERIC_COLUMNS</text>
+<text x="1258.3" y="678.5" class="mem" text-anchor="start">STRING_COLUMNS</text>
+<text x="1258.3" y="693.5" class="mem" text-anchor="start">ALLOWED_DATA_CUTS</text>
+<text x="1258.3" y="708.5" class="mem" text-anchor="start">DEDUP_SUBSET</text>
+<text x="1258.3" y="723.5" class="mem" text-anchor="start">AHEAD/TEAM/WISER_STATE_NAMES</text>
+<text x="1258.3" y="738.5" class="mem" text-anchor="start">RAW_OBSERVATIONS_COLUMN</text>
+<line class="sep" x1="1248.3" y1="747.0" x2="1454.5" y2="747.0"/>
+<text x="1258.3" y="762.0" class="cap" text-anchor="start">read by</text>
+<text x="1258.3" y="777.5" class="mem" text-anchor="start">DataIngestor, DataEnricher,</text>
+<text x="1258.3" y="792.5" class="mem" text-anchor="start">DataValidator, DataCleaner</text>
+</g>
+<g><rect class="box" x="1248.3" y="851.0" width="272.7" height="151.0" rx="2"/>
+<rect class="h-class" x="1248.9" y="851.6" width="271.5" height="25.4"/>
+<text x="1384.7" y="869.0" class="name" text-anchor="middle">DisclosureIngestor</text>
+<line class="sep" x1="1248.3" y1="877.0" x2="1521.0" y2="877.0"/>
+<text x="1258.3" y="893.5" class="mem" text-anchor="start">+records: list[PriorAuthMetricRecord]</text>
+<line class="sep" x1="1248.3" y1="902.0" x2="1521.0" y2="902.0"/>
+<text x="1258.3" y="918.5" class="mem" text-anchor="start">+ingest_directory(dir_path): DataFrame</text>
+<text x="1258.3" y="933.5" class="mem" text-anchor="start">+ingest_file(file_path)</text>
+<text x="1258.3" y="948.5" class="mem" text-anchor="start">+to_dataframe(): DataFrame</text>
+<text x="1258.3" y="963.5" class="mem" text-anchor="start">−_detect_payer(...)</text>
+<text x="1258.3" y="978.5" class="mem" text-anchor="start">−_detect_year(...)</text>
+<text x="1258.3" y="993.5" class="mem" text-anchor="start">−_extract_metrics(...)</text>
+</g>
+<g><rect class="box" x="1248.3" y="1062.0" width="294.5" height="193.0" rx="2"/>
+<rect class="h-data" x="1248.9" y="1062.6" width="293.3" height="37.4"/>
+<text x="1395.5" y="1077.0" class="stereo" text-anchor="middle">«dataclass» src.modules.pa_metrics_simulation</text>
+<text x="1395.5" y="1093.0" class="name" text-anchor="middle">PriorAuthMetricRecord</text>
+<line class="sep" x1="1248.3" y1="1100.0" x2="1542.8" y2="1100.0"/>
+<text x="1258.3" y="1116.5" class="mem" text-anchor="start">+county_id, state_id: str</text>
+<text x="1258.3" y="1131.5" class="mem" text-anchor="start">+enrollment_type, year: str</text>
+<text x="1258.3" y="1146.5" class="mem" text-anchor="start">+total/approved/denied_requests: int</text>
+<text x="1258.3" y="1161.5" class="mem" text-anchor="start">+appeals_overturned: int</text>
+<text x="1258.3" y="1176.5" class="mem" text-anchor="start">+expedited_requests/approved/denied: int</text>
+<line class="sep" x1="1248.3" y1="1185.0" x2="1542.8" y2="1185.0"/>
+<text x="1258.3" y="1201.5" class="mem" text-anchor="start">+standard_approval_rate(): float</text>
+<text x="1258.3" y="1216.5" class="mem" text-anchor="start">+standard_denial_rate(): float</text>
+<text x="1258.3" y="1231.5" class="mem" text-anchor="start">+appeal_overturn_rate(): float</text>
+<text x="1258.3" y="1246.5" class="mem" text-anchor="start">…</text>
+</g>
+<text x="287.0" y="183.0" class="lbl" text-anchor="end">vintages 1..*</text>
+<text x="243.0" y="352.0" class="lbl" text-anchor="start">«use» for_vintage(vintage)</text>
+<text x="1064.7" y="179.5" class="lbl" text-anchor="middle">«create»</text>
+<text x="884.2" y="118.0" class="lbl" text-anchor="middle">«use» catalog.vintage(year, cut)</text>
+<text x="454.2" y="378.0" class="lbl" text-anchor="start">«raises»</text>
+<text x="1229.1" y="271.0" class="lbl" text-anchor="start">«raises»</text>
+<text x="632.1" y="782.0" class="lbl" text-anchor="start">1</text>
+<text x="636.2" y="975.0" class="lbl" text-anchor="start">«raises»</text>
+<text x="1392.7" y="1036.0" class="lbl" text-anchor="start">«create»</text>
+<path class="note" d="M50,1165 h428.0 l10,10 v46 h-438.0 z"/><path class="note" d="M478.0,1165 v10 h10"/><text x="60.0" y="1183.0" class="notetxt" text-anchor="start">src/build_site.py.transform() reuses DataIngestor.process_dataframe()</text><text x="60.0" y="1197.0" class="notetxt" text-anchor="start">and DataEnricher.enrich() on the CMS API frames; the full</text><text x="60.0" y="1211.0" class="notetxt" text-anchor="start">DataIngestionPipeline is driven by src/cli.py for local CSV files.</text>
+</svg>
