@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1391" height="914" viewBox="0 0 1391 914" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<title>Dashboard programs — class diagram</title>
+<style>
+.bg{fill:#ffffff}
+.box{fill:#ffffff;stroke:#3b3b52;stroke-width:1.2}
+.sep{stroke:#3b3b52;stroke-width:1}
+.h-class{fill:#ecebfa}.h-module{fill:#e4f2e9}.h-ext{fill:#fcecd6}.h-art{fill:#e9eef5}
+.h-exc{fill:#fbe3e3}.h-data{fill:#e3eefb}.h-prog{fill:#efe6f8}.h-pkg{fill:#f1f1f1}.h-wf{fill:#fff3c9}
+.name{font:600 13px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#1d1d2c}
+.stereo{font:italic 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#55556b}
+.mem{font:11px Consolas,Menlo,'DejaVu Sans Mono',monospace;fill:#25253a}
+.cap{font:italic 10px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#6b6b80}
+.edge{fill:none;stroke:#4a4a64;stroke-width:1.25}
+.dash{stroke-dasharray:6 4}
+.ah-fill{fill:#4a4a64;stroke:#4a4a64}
+.ah-open{fill:none;stroke:#4a4a64;stroke-width:1.25}
+.ah-hollow{fill:#ffffff;stroke:#4a4a64;stroke-width:1.25}
+.lbl{font:11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#34344c;paint-order:stroke;stroke:#ffffff;stroke-width:4px;stroke-linejoin:round}
+.frame{fill:#fafafc;stroke:#8f8fa6;stroke-width:1}
+.ftab{fill:#ececf3;stroke:#8f8fa6;stroke-width:1}
+.ftitle{font:600 12px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#3c3c54}
+.title{font:600 19px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#1d1d2c}
+.sub{font:12px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#62627a}
+.note{fill:#fff9df;stroke:#b5a35a;stroke-width:1}
+.notetxt{font:11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#4a4326}
+.life{stroke:#8f8fa6;stroke-width:1;stroke-dasharray:5 4}
+.act{fill:#ecebfa;stroke:#3b3b52;stroke-width:1}
+.frag{fill:none;stroke:#6b6b84;stroke-width:1}
+.fragtab{fill:#ececf3;stroke:#6b6b84;stroke-width:1}
+.fragtxt{font:600 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#3c3c54}
+.guard{font:italic 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#3c3c54}
+.actor{fill:none;stroke:#3b3b52;stroke-width:1.4}
+@media (prefers-color-scheme: dark){
+.bg{fill:#17171f}
+.box{fill:#20202b;stroke:#b9b9cf}.sep{stroke:#b9b9cf}
+.h-class{fill:#33305a}.h-module{fill:#22402f}.h-ext{fill:#4a3618}.h-art{fill:#26364a}
+.h-exc{fill:#4d2626}.h-data{fill:#203a57}.h-prog{fill:#3b2a52}.h-pkg{fill:#2c2c38}.h-wf{fill:#4a4019}
+.name{fill:#ececf6}.stereo{fill:#b4b4c8}.mem{fill:#dcdcea}.cap{fill:#a4a4ba}
+.edge{stroke:#b4b4cc}.ah-fill{fill:#b4b4cc;stroke:#b4b4cc}.ah-open{stroke:#b4b4cc}
+.ah-hollow{fill:#17171f;stroke:#b4b4cc}
+.lbl{fill:#d8d8e8;stroke:#17171f}
+.frame{fill:#1c1c26;stroke:#5e5e78}.ftab{fill:#2a2a38;stroke:#5e5e78}.ftitle{fill:#cfcfe2}
+.title{fill:#f0f0f8}.sub{fill:#a4a4ba}
+.note{fill:#3a3520;stroke:#8a7b3c}.notetxt{fill:#eadfb0}
+.life{stroke:#5e5e78}.act{fill:#33305a;stroke:#b9b9cf}
+.frag{stroke:#8a8aa6}.fragtab{fill:#2a2a38;stroke:#8a8aa6}.fragtxt,.guard{fill:#cfcfe2}
+.actor{stroke:#d0d0e2}
+}
+</style>
+<defs>
+ <marker id="open" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+  <path class="ah-open" d="M1,1 L11,6 L1,11"/></marker>
+ <marker id="fill" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+  <path class="ah-fill" d="M1,1.5 L11,6 L1,10.5 z"/></marker>
+ <marker id="tri" viewBox="0 0 16 16" refX="15" refY="8" markerWidth="16" markerHeight="16" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+  <path class="ah-hollow" d="M1,1 L15,8 L1,15 z"/></marker>
+ <marker id="diamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto" markerUnits="userSpaceOnUse">
+  <path class="ah-fill" d="M1,6 L10,1 L19,6 L10,11 z"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<text x="30.0" y="36.0" class="title" text-anchor="start">Dashboard programs — class diagram</text><text x="30.0" y="56.0" class="sub" text-anchor="start">The three front ends, shown as «module» classifiers with their functions grouped by role, and where each one gets its data.</text>
+<path class="edge dash" d="M339.3,160.0 L509.3,160.0" marker-end="url(#open)"/>
+<path class="edge dash" d="M972.0,220.0 L802.0,220.0" marker-end="url(#open)"/>
+<path class="edge dash" d="M972.0,245.4 L942.0,245.4 L942.0,508.0 L772.0,508.0" marker-end="url(#open)"/>
+<path class="edge dash" d="M625.6,469.0 L625.6,359.0" marker-end="url(#open)"/>
+<path class="edge dash" d="M972.0,715.8 L852.0,715.8" marker-end="url(#open)"/>
+<path class="edge dash" d="M972.0,827.5 L852.0,827.5" marker-end="url(#open)"/>
+<path class="edge dash" d="M249.5,90.0 L249.5,74.0 L1085.7,74.0 L1085.7,90.0" marker-end="url(#open)"/>
+<g><rect class="box" x="40.0" y="90.0" width="299.3" height="533.0" rx="2"/>
+<rect class="h-prog" x="40.6" y="90.6" width="298.1" height="37.4"/>
+<text x="189.7" y="105.0" class="stereo" text-anchor="middle">«program» GitHub Pages dashboard (browser)</text>
+<text x="189.7" y="121.0" class="name" text-anchor="middle">docs/app.js</text>
+<rect class="box" x="320.3" y="97" width="13" height="16"/><rect class="box" x="317.3" y="100" width="7" height="3.5"/><rect class="box" x="317.3" y="106" width="7" height="3.5"/>
+<line class="sep" x1="40.0" y1="128.0" x2="339.3" y2="128.0"/>
+<text x="50.0" y="143.0" class="cap" text-anchor="start">state</text>
+<text x="50.0" y="158.5" class="mem" text-anchor="start">S: {tab, state, enrollment, threshold,</text>
+<text x="50.0" y="173.5" class="mem" text-anchor="start">   track, raf, v28, service, moduleC}</text>
+<text x="50.0" y="188.5" class="mem" text-anchor="start">DATA: {counties, oc, ref, manifest}</text>
+<text x="50.0" y="203.5" class="mem" text-anchor="start">ALL_ROWS: rows[]</text>
+<line class="sep" x1="40.0" y1="212.0" x2="339.3" y2="212.0"/>
+<text x="50.0" y="227.0" class="cap" text-anchor="start">load</text>
+<text x="50.0" y="242.5" class="mem" text-anchor="start">async boot()</text>
+<text x="50.0" y="257.5" class="mem" text-anchor="start">decodeCounties(payload): rows[]</text>
+<text x="50.0" y="272.5" class="mem" text-anchor="start">showBootError(headline, detail)</text>
+<line class="sep" x1="40.0" y1="281.0" x2="339.3" y2="281.0"/>
+<text x="50.0" y="296.0" class="cap" text-anchor="start">derive  (mirror src.modules)</text>
+<text x="50.0" y="311.5" class="mem" text-anchor="start">addV28Index(rows)</text>
+<text x="50.0" y="326.5" class="mem" text-anchor="start">addRadvScore(rows)</text>
+<text x="50.0" y="341.5" class="mem" text-anchor="start">addSavings(rows, track)</text>
+<text x="50.0" y="356.5" class="mem" text-anchor="start">msrThreshold(personYears, base, floor, …)</text>
+<text x="50.0" y="371.5" class="mem" text-anchor="start">categorise(value, msr, twoSided)</text>
+<text x="50.0" y="386.5" class="mem" text-anchor="start">rafBand(risk)</text>
+<line class="sep" x1="40.0" y1="395.0" x2="339.3" y2="395.0"/>
+<text x="50.0" y="410.0" class="cap" text-anchor="start">render</text>
+<text x="50.0" y="425.5" class="mem" text-anchor="start">render()</text>
+<text x="50.0" y="440.5" class="mem" text-anchor="start">renderProvenance()</text>
+<text x="50.0" y="455.5" class="mem" text-anchor="start">renderKpis(rows)</text>
+<text x="50.0" y="470.5" class="mem" text-anchor="start">renderModuleA(rows)</text>
+<text x="50.0" y="485.5" class="mem" text-anchor="start">renderOcChart(rows)</text>
+<text x="50.0" y="500.5" class="mem" text-anchor="start">renderRankedTable(rows, hasYoy)</text>
+<text x="50.0" y="515.5" class="mem" text-anchor="start">renderModuleB(rows)</text>
+<text x="50.0" y="530.5" class="mem" text-anchor="start">renderModuleC(rows)</text>
+<text x="50.0" y="545.5" class="mem" text-anchor="start">renderFieldTable(records, keys, …)</text>
+<line class="sep" x1="40.0" y1="554.0" x2="339.3" y2="554.0"/>
+<text x="50.0" y="569.0" class="cap" text-anchor="start">UI + helpers</text>
+<text x="50.0" y="584.5" class="mem" text-anchor="start">bind() · selectTab(tab) · selection()</text>
+<text x="50.0" y="599.5" class="mem" text-anchor="start">layout() · draw(id, traces) · tokens()</text>
+<text x="50.0" y="614.5" class="mem" text-anchor="start">fmtPct · fmtUsd · fmtInt · quantile · thin</text>
+</g>
+<g><rect class="box" x="509.3" y="120.0" width="292.7" height="239.0" rx="2"/>
+<rect class="h-art" x="509.9" y="120.6" width="291.5" height="37.4"/>
+<text x="655.6" y="135.0" class="stereo" text-anchor="middle">«artifact» committed JSON payload</text>
+<text x="655.6" y="151.0" class="name" text-anchor="middle">docs/data/</text>
+<path class="box" d="M781.95,126 h9 l5,5 v13 h-14 z M790.95,126 v5 h5"/>
+<line class="sep" x1="509.3" y1="158.0" x2="802.0" y2="158.0"/>
+<text x="519.3" y="173.0" class="cap" text-anchor="start">counties.json</text>
+<text x="519.3" y="188.5" class="mem" text-anchor="start">columns[10], states[], counties[]</text>
+<text x="519.3" y="203.5" class="mem" text-anchor="start">enrollment_types[], rows[][]</text>
+<line class="sep" x1="509.3" y1="212.0" x2="802.0" y2="212.0"/>
+<text x="519.3" y="227.0" class="cap" text-anchor="start">oc_stability.json</text>
+<text x="519.3" y="242.5" class="mem" text-anchor="start">available, cuts[], series[], national[]</text>
+<line class="sep" x1="509.3" y1="251.0" x2="802.0" y2="251.0"/>
+<text x="519.3" y="266.0" class="cap" text-anchor="start">reference.json</text>
+<text x="519.3" y="281.5" class="mem" text-anchor="start">v28_skew, v28_raw_exposure, track_params,</text>
+<text x="519.3" y="296.5" class="mem" text-anchor="start">benchmark, disclosures, pa_fields, …</text>
+<line class="sep" x1="509.3" y1="305.0" x2="802.0" y2="305.0"/>
+<text x="519.3" y="320.0" class="cap" text-anchor="start">manifest.json</text>
+<text x="519.3" y="335.5" class="mem" text-anchor="start">built_at, catalog_source, latest_year,</text>
+<text x="519.3" y="350.5" class="mem" text-anchor="start">county_rows, states, vintages[]</text>
+</g>
+<g><rect class="box" x="972.0" y="90.0" width="379.1" height="518.0" rx="2"/>
+<rect class="h-prog" x="972.6" y="90.6" width="377.9" height="37.4"/>
+<text x="1161.5" y="105.0" class="stereo" text-anchor="middle">«program» Streamlit edition (port of app.js)</text>
+<text x="1161.5" y="121.0" class="name" text-anchor="middle">streamlit_dashboard/app.py</text>
+<rect class="box" x="1332.0500000000002" y="97" width="13" height="16"/><rect class="box" x="1329.0500000000002" y="100" width="7" height="3.5"/><rect class="box" x="1329.0500000000002" y="106" width="7" height="3.5"/>
+<line class="sep" x1="972.0" y1="128.0" x2="1351.1" y2="128.0"/>
+<text x="982.0" y="143.0" class="cap" text-anchor="start">settings</text>
+<text x="982.0" y="158.5" class="mem" text-anchor="start">MSSP_DATA_SOURCE = &quot;main&quot; | &quot;local&quot;</text>
+<text x="982.0" y="173.5" class="mem" text-anchor="start">MSSP_DATA_REF = &quot;main&quot;</text>
+<text x="982.0" y="188.5" class="mem" text-anchor="start">PAYLOAD_FILES = counties, oc_stability,</text>
+<text x="982.0" y="203.5" class="mem" text-anchor="start">  reference, manifest</text>
+<line class="sep" x1="972.0" y1="212.0" x2="1351.1" y2="212.0"/>
+<text x="982.0" y="227.0" class="cap" text-anchor="start">load  (@cache = st.cache_data)</text>
+<text x="982.0" y="242.5" class="mem" text-anchor="start">load_payload(): (payload, source)</text>
+<text x="982.0" y="257.5" class="mem" text-anchor="start">resolve_commit(ref): {sha, date, url}  @cache(ttl=900)</text>
+<text x="982.0" y="272.5" class="mem" text-anchor="start">fetch_payload(sha): dict  @cache</text>
+<text x="982.0" y="287.5" class="mem" text-anchor="start">read_local(mtimes): dict  @cache</text>
+<text x="982.0" y="302.5" class="mem" text-anchor="start">decode_payload(raw): dict  @cache</text>
+<line class="sep" x1="972.0" y1="311.0" x2="1351.1" y2="311.0"/>
+<text x="982.0" y="326.0" class="cap" text-anchor="start">derive  (mirror src.modules)</text>
+<text x="982.0" y="341.5" class="mem" text-anchor="start">add_v28_index(df, raw)</text>
+<text x="982.0" y="356.5" class="mem" text-anchor="start">add_radv_score(df)</text>
+<text x="982.0" y="371.5" class="mem" text-anchor="start">add_savings(df, ref, track)</text>
+<text x="982.0" y="386.5" class="mem" text-anchor="start">msr_threshold(py, base, floor, …)</text>
+<text x="982.0" y="401.5" class="mem" text-anchor="start">raf_band(risk): Series</text>
+<line class="sep" x1="972.0" y1="410.0" x2="1351.1" y2="410.0"/>
+<text x="982.0" y="425.0" class="cap" text-anchor="start">render</text>
+<text x="982.0" y="440.5" class="mem" text-anchor="start">selection(): DataFrame</text>
+<text x="982.0" y="455.5" class="mem" text-anchor="start">render_kpis(rows)</text>
+<text x="982.0" y="470.5" class="mem" text-anchor="start">render_module_a(rows)</text>
+<text x="982.0" y="485.5" class="mem" text-anchor="start">render_oc_chart(rows)</text>
+<text x="982.0" y="500.5" class="mem" text-anchor="start">render_ranked_table(rows, has_yoy)</text>
+<text x="982.0" y="515.5" class="mem" text-anchor="start">render_module_b(rows)</text>
+<text x="982.0" y="530.5" class="mem" text-anchor="start">render_module_c()</text>
+<text x="982.0" y="545.5" class="mem" text-anchor="start">render_field_table(records, keys, …)</text>
+<line class="sep" x1="972.0" y1="554.0" x2="1351.1" y2="554.0"/>
+<text x="982.0" y="569.0" class="cap" text-anchor="start">helpers</text>
+<text x="982.0" y="584.5" class="mem" text-anchor="start">md() · draw(traces) · layout() · insight() · kpi()</text>
+<text x="982.0" y="599.5" class="mem" text-anchor="start">fmt_pct · fmt_usd · fmt_int · quantile · thin</text>
+</g>
+<g><rect class="box" x="479.3" y="469.0" width="292.7" height="78.0" rx="2"/>
+<rect class="h-ext" x="479.9" y="469.6" width="291.5" height="37.4"/>
+<text x="625.6" y="484.0" class="stereo" text-anchor="middle">«external system»</text>
+<text x="625.6" y="500.0" class="name" text-anchor="middle">GitHub</text>
+<rect class="box" x="752.95" y="476" width="13" height="16"/><rect class="box" x="749.95" y="479" width="7" height="3.5"/><rect class="box" x="749.95" y="485" width="7" height="3.5"/>
+<line class="sep" x1="479.3" y1="507.0" x2="772.0" y2="507.0"/>
+<text x="489.3" y="523.5" class="mem" text-anchor="start">api.github.com  /commits?path=docs/data</text>
+<text x="489.3" y="538.5" class="mem" text-anchor="start">raw.githubusercontent.com/{sha}/docs/data</text>
+</g>
+<g><rect class="box" x="972.0" y="668.0" width="292.1" height="191.0" rx="2"/>
+<rect class="h-prog" x="972.6" y="668.6" width="290.9" height="37.4"/>
+<text x="1118.0" y="683.0" class="stereo" text-anchor="middle">«program» legacy Streamlit app (live API)</text>
+<text x="1118.0" y="699.0" class="name" text-anchor="middle">src/app.py</text>
+<rect class="box" x="1245.0500000000002" y="675" width="13" height="16"/><rect class="box" x="1242.0500000000002" y="678" width="7" height="3.5"/><rect class="box" x="1242.0500000000002" y="684" width="7" height="3.5"/>
+<line class="sep" x1="972.0" y1="706.0" x2="1264.1" y2="706.0"/>
+<text x="982.0" y="721.0" class="cap" text-anchor="start">load  @cache_data(ttl=3600)</text>
+<text x="982.0" y="736.5" class="mem" text-anchor="start">fetch_puf_data(): DataFrame</text>
+<text x="982.0" y="751.5" class="mem" text-anchor="start">fetch_hcc_multi_year_data(): DataFrame</text>
+<line class="sep" x1="972.0" y1="760.0" x2="1264.1" y2="760.0"/>
+<text x="982.0" y="775.0" class="cap" text-anchor="start">render</text>
+<text x="982.0" y="790.5" class="mem" text-anchor="start">main()</text>
+<text x="982.0" y="805.5" class="mem" text-anchor="start">render_sidebar(df, active_tab)</text>
+<text x="982.0" y="820.5" class="mem" text-anchor="start">render_hcc_tab(df, filters)</text>
+<text x="982.0" y="835.5" class="mem" text-anchor="start">render_shared_savings_tab(df, filters)</text>
+<text x="982.0" y="850.5" class="mem" text-anchor="start">render_pa_metrics_tab(df, filters)</text>
+</g>
+<g><rect class="box" x="706.2" y="678.0" width="145.7" height="63.0" rx="2"/>
+<rect class="h-ext" x="706.9" y="678.6" width="144.5" height="37.4"/>
+<text x="779.1" y="693.0" class="stereo" text-anchor="middle">«external system»</text>
+<text x="779.1" y="709.0" class="name" text-anchor="middle">data.cms.gov</text>
+<rect class="box" x="832.95" y="685" width="13" height="16"/><rect class="box" x="829.95" y="688" width="7" height="3.5"/><rect class="box" x="829.95" y="694" width="7" height="3.5"/>
+<line class="sep" x1="706.2" y1="716.0" x2="852.0" y2="716.0"/>
+<text x="716.2" y="732.5" class="mem" text-anchor="start">Data API v1</text>
+</g>
+<g><rect class="box" x="648.2" y="781.0" width="203.7" height="93.0" rx="2"/>
+<rect class="h-pkg" x="648.9" y="781.6" width="202.5" height="37.4"/>
+<text x="750.1" y="796.0" class="stereo" text-anchor="middle">«package»</text>
+<text x="750.1" y="812.0" class="name" text-anchor="middle">src.etl · src.modules</text>
+<rect class="box" x="832.95" y="788" width="13" height="16"/><rect class="box" x="829.95" y="791" width="7" height="3.5"/><rect class="box" x="829.95" y="797" width="7" height="3.5"/>
+<line class="sep" x1="648.2" y1="819.0" x2="852.0" y2="819.0"/>
+<text x="658.2" y="835.5" class="mem" text-anchor="start">CMSCatalog, fetch_vintages,</text>
+<text x="658.2" y="850.5" class="mem" text-anchor="start">DataIngestor, DataEnricher,</text>
+<text x="658.2" y="865.5" class="mem" text-anchor="start">report builders</text>
+</g>
+<text x="424.3" y="138.0" class="lbl" text-anchor="middle">boot(): fetch ./data/*.json</text>
+<text x="424.3" y="151.0" class="lbl" text-anchor="middle">(cache: no-cache)</text>
+<text x="887.0" y="198.0" class="lbl" text-anchor="middle">read_local()</text>
+<text x="887.0" y="211.0" class="lbl" text-anchor="middle">fallback / local mode</text>
+<text x="780.0" y="486.0" class="lbl" text-anchor="start">resolve_commit(ref)</text>
+<text x="780.0" y="499.0" class="lbl" text-anchor="start">→ fetch_payload(sha)</text>
+<text x="633.6" y="399.0" class="lbl" text-anchor="start">serves main&#x27;s</text>
+<text x="633.6" y="412.0" class="lbl" text-anchor="start">docs/data/ at one commit</text>
+<text x="912.0" y="708.8" class="lbl" text-anchor="middle">«HTTP» on load</text>
+<text x="912.0" y="820.5" class="lbl" text-anchor="middle">«use»</text>
+<text x="655.6" y="68.0" class="lbl" text-anchor="middle">«port» line-for-line: same tabs, filters, charts, KPIs</text>
+<path class="note" d="M40,643 h422.0 l10,10 v74 h-432.0 z"/><path class="note" d="M462.0,643 v10 h10"/><text x="50.0" y="661.0" class="notetxt" text-anchor="start">app.js and streamlit_dashboard/app.py never call data.cms.gov: a CMS</text><text x="50.0" y="675.0" class="notetxt" text-anchor="start">outage or URL change cannot blank them. Their derive functions</text><text x="50.0" y="689.0" class="notetxt" text-anchor="start">re-implement src.modules formulas (compute_v28_exposure_index,</text><text x="50.0" y="703.0" class="notetxt" text-anchor="start">compute_radv_exposure_score, calculate_shared_savings) on the</text><text x="50.0" y="717.0" class="notetxt" text-anchor="start">filtered selection. Only the legacy src/app.py calls CMS directly.</text>
+</svg>

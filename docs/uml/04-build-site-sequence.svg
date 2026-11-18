@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1610" viewBox="0 0 1700 1610" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<title>src/build_site.py — sequence diagram</title>
+<style>
+.bg{fill:#ffffff}
+.box{fill:#ffffff;stroke:#3b3b52;stroke-width:1.2}
+.sep{stroke:#3b3b52;stroke-width:1}
+.h-class{fill:#ecebfa}.h-module{fill:#e4f2e9}.h-ext{fill:#fcecd6}.h-art{fill:#e9eef5}
+.h-exc{fill:#fbe3e3}.h-data{fill:#e3eefb}.h-prog{fill:#efe6f8}.h-pkg{fill:#f1f1f1}.h-wf{fill:#fff3c9}
+.name{font:600 13px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#1d1d2c}
+.stereo{font:italic 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#55556b}
+.mem{font:11px Consolas,Menlo,'DejaVu Sans Mono',monospace;fill:#25253a}
+.cap{font:italic 10px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#6b6b80}
+.edge{fill:none;stroke:#4a4a64;stroke-width:1.25}
+.dash{stroke-dasharray:6 4}
+.ah-fill{fill:#4a4a64;stroke:#4a4a64}
+.ah-open{fill:none;stroke:#4a4a64;stroke-width:1.25}
+.ah-hollow{fill:#ffffff;stroke:#4a4a64;stroke-width:1.25}
+.lbl{font:11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#34344c;paint-order:stroke;stroke:#ffffff;stroke-width:4px;stroke-linejoin:round}
+.frame{fill:#fafafc;stroke:#8f8fa6;stroke-width:1}
+.ftab{fill:#ececf3;stroke:#8f8fa6;stroke-width:1}
+.ftitle{font:600 12px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#3c3c54}
+.title{font:600 19px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#1d1d2c}
+.sub{font:12px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#62627a}
+.note{fill:#fff9df;stroke:#b5a35a;stroke-width:1}
+.notetxt{font:11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#4a4326}
+.life{stroke:#8f8fa6;stroke-width:1;stroke-dasharray:5 4}
+.act{fill:#ecebfa;stroke:#3b3b52;stroke-width:1}
+.frag{fill:none;stroke:#6b6b84;stroke-width:1}
+.fragtab{fill:#ececf3;stroke:#6b6b84;stroke-width:1}
+.fragtxt{font:600 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#3c3c54}
+.guard{font:italic 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#3c3c54}
+.actor{fill:none;stroke:#3b3b52;stroke-width:1.4}
+@media (prefers-color-scheme: dark){
+.bg{fill:#17171f}
+.box{fill:#20202b;stroke:#b9b9cf}.sep{stroke:#b9b9cf}
+.h-class{fill:#33305a}.h-module{fill:#22402f}.h-ext{fill:#4a3618}.h-art{fill:#26364a}
+.h-exc{fill:#4d2626}.h-data{fill:#203a57}.h-prog{fill:#3b2a52}.h-pkg{fill:#2c2c38}.h-wf{fill:#4a4019}
+.name{fill:#ececf6}.stereo{fill:#b4b4c8}.mem{fill:#dcdcea}.cap{fill:#a4a4ba}
+.edge{stroke:#b4b4cc}.ah-fill{fill:#b4b4cc;stroke:#b4b4cc}.ah-open{stroke:#b4b4cc}
+.ah-hollow{fill:#17171f;stroke:#b4b4cc}
+.lbl{fill:#d8d8e8;stroke:#17171f}
+.frame{fill:#1c1c26;stroke:#5e5e78}.ftab{fill:#2a2a38;stroke:#5e5e78}.ftitle{fill:#cfcfe2}
+.title{fill:#f0f0f8}.sub{fill:#a4a4ba}
+.note{fill:#3a3520;stroke:#8a7b3c}.notetxt{fill:#eadfb0}
+.life{stroke:#5e5e78}.act{fill:#33305a;stroke:#b9b9cf}
+.frag{stroke:#8a8aa6}.fragtab{fill:#2a2a38;stroke:#8a8aa6}.fragtxt,.guard{fill:#cfcfe2}
+.actor{stroke:#d0d0e2}
+}
+</style>
+<defs>
+ <marker id="open" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+  <path class="ah-open" d="M1,1 L11,6 L1,11"/></marker>
+ <marker id="fill" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+  <path class="ah-fill" d="M1,1.5 L11,6 L1,10.5 z"/></marker>
+ <marker id="tri" viewBox="0 0 16 16" refX="15" refY="8" markerWidth="16" markerHeight="16" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+  <path class="ah-hollow" d="M1,1 L15,8 L1,15 z"/></marker>
+ <marker id="diamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto" markerUnits="userSpaceOnUse">
+  <path class="ah-fill" d="M1,6 L10,1 L19,6 L10,11 z"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<text x="30.0" y="36.0" class="title" text-anchor="start">src/build_site.py — sequence diagram</text><text x="30.0" y="56.0" class="sub" text-anchor="start">One manual run of  python -m src.build_site [--check-only] [--offline].  Nothing schedules this; the maintainer runs it and commits the result.</text>
+<line class="life" x1="90" y1="152" x2="90" y2="1600"/>
+<line class="life" x1="300" y1="126" x2="300" y2="1600"/>
+<line class="life" x1="520" y1="126" x2="520" y2="1600"/>
+<line class="life" x1="745" y1="126" x2="745" y2="1600"/>
+<line class="life" x1="975" y1="126" x2="975" y2="1600"/>
+<line class="life" x1="1185" y1="126" x2="1185" y2="1600"/>
+<line class="life" x1="1395" y1="126" x2="1395" y2="1600"/>
+<line class="life" x1="1570" y1="126" x2="1570" y2="1600"/>
+<rect class="act" x="294" y="186" width="12" height="1284"/>
+<rect class="frag" x="480" y="292" width="565" height="214"/><path class="fragtab" d="M480,292 h42 v12 l-7,7 h-35 z"/><text x="486.0" y="306.0" class="fragtxt" text-anchor="start">alt</text><text x="530.0" y="306.0" class="guard" text-anchor="start">[network allowed and catalog reachable]</text>
+<line class="frag" x1="480" y1="440" x2="1045" y2="440" stroke-dasharray="6 4"/><text x="488.0" y="454.0" class="guard" text-anchor="start">[offline, or live resolution failed]</text>
+<rect class="frag" x="480" y="641" width="565" height="220"/><path class="fragtab" d="M480,641 h50 v12 l-7,7 h-43 z"/><text x="486.0" y="655.0" class="fragtxt" text-anchor="start">loop</text><text x="538.0" y="655.0" class="guard" text-anchor="start">[each (year, cut) requested]</text>
+<rect class="frag" x="40" y="1072" width="380" height="66"/><path class="fragtab" d="M40,1072 h42 v12 l-7,7 h-35 z"/><text x="46.0" y="1086.0" class="fragtxt" text-anchor="start">alt</text><text x="90.0" y="1086.0" class="guard" text-anchor="start">[any gate fails]</text>
+<rect class="frag" x="40" y="1312" width="380" height="66"/><path class="fragtab" d="M40,1312 h42 v12 l-7,7 h-35 z"/><text x="46.0" y="1326.0" class="fragtxt" text-anchor="start">opt</text><text x="90.0" y="1326.0" class="guard" text-anchor="start">[--check-only]</text>
+<path class="edge" d="M90.0,190.0 L294.0,190.0" marker-end="url(#fill)"/>
+<path class="edge" d="M306.0,226.0 L340.0,226.0 L340.0,242.0 L308.0,242.0" marker-end="url(#fill)"/>
+<path class="edge" d="M306.0,270.0 L520.0,270.0" marker-end="url(#fill)"/>
+<path class="edge" d="M520.0,334.0 L975.0,334.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M975.0,370.0 L520.0,370.0" marker-end="url(#open)"/>
+<path class="edge" d="M520.0,406.0 L554.0,406.0 L554.0,422.0 L522.0,422.0" marker-end="url(#fill)"/>
+<path class="edge" d="M520.0,476.0 L554.0,476.0 L554.0,492.0 L522.0,492.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M520.0,526.0 L306.0,526.0" marker-end="url(#open)"/>
+<path class="edge" d="M306.0,562.0 L340.0,562.0 L340.0,578.0 L308.0,578.0" marker-end="url(#fill)"/>
+<path class="edge" d="M306.0,619.0 L745.0,619.0" marker-end="url(#fill)"/>
+<path class="edge" d="M745.0,683.0 L520.0,683.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M520.0,719.0 L745.0,719.0" marker-end="url(#open)"/>
+<path class="edge" d="M745.0,755.0 L975.0,755.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M975.0,791.0 L745.0,791.0" marker-end="url(#open)"/>
+<path class="edge" d="M745.0,827.0 L779.0,827.0 L779.0,843.0 L747.0,843.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M745.0,877.0 L306.0,877.0" marker-end="url(#open)"/>
+<path class="edge" d="M306.0,913.0 L1185.0,913.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M1185.0,949.0 L306.0,949.0" marker-end="url(#open)"/>
+<path class="edge" d="M306.0,985.0 L340.0,985.0 L340.0,1001.0 L308.0,1001.0" marker-end="url(#fill)"/>
+<path class="edge" d="M306.0,1042.0 L340.0,1042.0 L340.0,1058.0 L308.0,1058.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M300.0,1114.0 L90.0,1114.0" marker-end="url(#open)"/>
+<path class="edge" d="M306.0,1160.0 L340.0,1160.0 L340.0,1176.0 L308.0,1176.0" marker-end="url(#fill)"/>
+<path class="edge" d="M306.0,1204.0 L1395.0,1204.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M1395.0,1246.0 L306.0,1246.0" marker-end="url(#open)"/>
+<path class="edge" d="M306.0,1282.0 L340.0,1282.0 L340.0,1298.0 L308.0,1298.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M300.0,1354.0 L90.0,1354.0" marker-end="url(#open)"/>
+<path class="edge" d="M306.0,1400.0 L1570.0,1400.0" marker-end="url(#fill)"/>
+<path class="edge dash" d="M300.0,1464.0 L90.0,1464.0" marker-end="url(#open)"/>
+<g class="actor"><circle cx="90" cy="88" r="8"/><path d="M90,96 v20 M77,103 h26 M90,116 l-11,15 M90,116 l11,15"/></g><text x="90.0" y="146.0" class="name" text-anchor="middle">Maintainer</text>
+<g><rect class="box" x="207.7" y="88.0" width="184.7" height="38.0" rx="2"/>
+<rect class="h-prog" x="208.2" y="88.6" width="183.5" height="37.4"/>
+<text x="300.0" y="103.0" class="stereo" text-anchor="middle">«program» src/build_site.py</text>
+<text x="300.0" y="119.0" class="name" text-anchor="middle">:build_site</text>
+</g>
+<g><rect class="box" x="464.2" y="88.0" width="111.5" height="38.0" rx="2"/>
+<rect class="h-class" x="464.9" y="88.6" width="110.3" height="37.4"/>
+<text x="520.0" y="103.0" class="stereo" text-anchor="middle">src.etl.catalog</text>
+<text x="520.0" y="119.0" class="name" text-anchor="middle">:CMSCatalog</text>
+</g>
+<g><rect class="box" x="615.6" y="88.0" width="258.7" height="38.0" rx="2"/>
+<rect class="h-class" x="616.2" y="88.6" width="257.5" height="37.4"/>
+<text x="745.0" y="103.0" class="stereo" text-anchor="middle">src.etl.client</text>
+<text x="745.0" y="119.0" class="name" text-anchor="middle">fetch_vintages / :CMSDataClient</text>
+</g>
+<g><rect class="box" x="913.1" y="88.0" width="123.7" height="38.0" rx="2"/>
+<rect class="h-ext" x="913.8" y="88.6" width="122.5" height="37.4"/>
+<text x="975.0" y="103.0" class="stereo" text-anchor="middle">«external system»</text>
+<text x="975.0" y="119.0" class="name" text-anchor="middle">data.cms.gov</text>
+</g>
+<g><rect class="box" x="1063.3" y="88.0" width="243.3" height="38.0" rx="2"/>
+<rect class="h-class" x="1063.9" y="88.6" width="242.1" height="37.4"/>
+<text x="1185.0" y="103.0" class="stereo" text-anchor="middle">src.etl</text>
+<text x="1185.0" y="119.0" class="name" text-anchor="middle">:DataIngestor · :DataEnricher</text>
+</g>
+<g><rect class="box" x="1342.7" y="88.0" width="104.7" height="38.0" rx="2"/>
+<rect class="h-module" x="1343.2" y="88.6" width="103.5" height="37.4"/>
+<text x="1395.0" y="103.0" class="stereo" text-anchor="middle">«package»</text>
+<text x="1395.0" y="119.0" class="name" text-anchor="middle">src.modules</text>
+</g>
+<g><rect class="box" x="1521.5" y="88.0" width="97.0" height="38.0" rx="2"/>
+<rect class="h-art" x="1522.1" y="88.6" width="95.8" height="37.4"/>
+<text x="1570.0" y="103.0" class="stereo" text-anchor="middle">«artifact»</text>
+<text x="1570.0" y="119.0" class="name" text-anchor="middle">docs/data/</text>
+</g>
+<text x="98.0" y="184.0" class="lbl" text-anchor="start">python -m src.build_site [--check-only] [--offline]</text>
+<text x="348.0" y="238.0" class="lbl" text-anchor="start">main(argv) → build(check_only, offline)</text>
+<text x="314.0" y="264.0" class="lbl" text-anchor="start">CMSCatalog.load(allow_network = not offline)</text>
+<text x="528.0" y="328.0" class="lbl" text-anchor="start">GET /data.json  (DCAT catalog)</text>
+<text x="967.0" y="364.0" class="lbl" text-anchor="end">dataset distributions by title</text>
+<text x="562.0" y="418.0" class="lbl" text-anchor="start">save(data/cms_catalog.json)</text>
+<text x="562.0" y="488.0" class="lbl" text-anchor="start">from_cache(data/cms_catalog.json)</text>
+<text x="512.0" y="520.0" class="lbl" text-anchor="end">catalog  (source = &quot;live&quot; | &quot;cache&quot;)</text>
+<text x="348.0" y="574.0" class="lbl" text-anchor="start">resolve_plan(catalog)</text>
+<text x="348.0" y="587.0" class="lbl" text-anchor="start">latest_years(2) · cuts_for_year(latest)</text>
+<text x="314.0" y="613.0" class="lbl" text-anchor="start">extract(): fetch_vintages(catalog, FINAL years, required=True)</text>
+<text x="737.0" y="677.0" class="lbl" text-anchor="end">vintage(year, cut)</text>
+<text x="528.0" y="713.0" class="lbl" text-anchor="start">Vintage(dataset_id, api_url, …)</text>
+<text x="753.0" y="749.0" class="lbl" text-anchor="start">GET /data-api/v1/dataset/{uuid}/data?size&amp;offset  (paged)</text>
+<text x="967.0" y="785.0" class="lbl" text-anchor="end">rows</text>
+<text x="787.0" y="839.0" class="lbl" text-anchor="start">_assert_expected_year() · _reshape_wide_to_long()</text>
+<text x="737.0" y="871.0" class="lbl" text-anchor="end">final_raw  (+ oc_raw: optional OC cuts, required=False)</text>
+<text x="314.0" y="907.0" class="lbl" text-anchor="start">transform(raw): process_dataframe(raw) → enrich(df)</text>
+<text x="1177.0" y="943.0" class="lbl" text-anchor="end">normalised frames</text>
+<text x="348.0" y="997.0" class="lbl" text-anchor="start">add_yoy_columns · add_confound_flags · add_oc_delta</text>
+<text x="348.0" y="1010.0" class="lbl" text-anchor="start">build_county_payload(latest_df)</text>
+<text x="348.0" y="1054.0" class="lbl" text-anchor="start">run_quality_gates(county_payload, latest_df)</text>
+<text x="292.0" y="1108.0" class="lbl" text-anchor="end">raise BuildError — docs/data/ left untouched, exit 1</text>
+<text x="348.0" y="1172.0" class="lbl" text-anchor="start">build_oc_stability(oc_df, latest_df)</text>
+<text x="314.0" y="1198.0" class="lbl" text-anchor="start">build_reference_payload(): build_enrollment_type_skew_summary(),</text>
+<text x="314.0" y="1220.0" class="lbl" text-anchor="start">build_pa_metrics_report(), build_cms_field_table(), TRACK_PARAMS, HCC_V28_DELTA</text>
+<text x="1387.0" y="1240.0" class="lbl" text-anchor="end">reference tables</text>
+<text x="348.0" y="1294.0" class="lbl" text-anchor="start">manifest = {built_at, catalog_source, latest_year, vintages, …}</text>
+<text x="292.0" y="1348.0" class="lbl" text-anchor="end">return manifest  (nothing written)</text>
+<text x="314.0" y="1394.0" class="lbl" text-anchor="start">_write() 4 JSON files to temp staging  →  publish(staging, docs/data)</text>
+<text x="314.0" y="1414.0" class="lbl" text-anchor="start">atomic swap: old payload moved to docs/data.prev, restored if the copy fails, then removed</text>
+<text x="292.0" y="1458.0" class="lbl" text-anchor="end">exit 0 · log summary</text>
+<path class="note" d="M30,1510 h404.0 l10,10 v60 h-414.0 z"/><path class="note" d="M434.0,1510 v10 h10"/><text x="40.0" y="1528.0" class="notetxt" text-anchor="start">Then, by hand: git add docs/data data/cms_catalog.json,</text><text x="40.0" y="1542.0" class="notetxt" text-anchor="start">git commit, git push origin main (then bring master in line).</text><text x="40.0" y="1556.0" class="notetxt" text-anchor="start">The push touches docs/**, so .github/workflows/pages.yml verifies</text><text x="40.0" y="1570.0" class="notetxt" text-anchor="start">and deploys the new payload. No workflow runs this build.</text>
+</svg>

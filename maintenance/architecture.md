@@ -66,3 +66,21 @@ The catalog exposes the operational cuts (`OC1` / `OC2` / `OC3`) alongside each 
 vintage. The OC-stability panel — earliest-cut → `FINAL` risk-score movement per county,
 a read on late diagnosis coding — is therefore backed by real vintages. The earlier
 single-cut fetch could only render it as a hard-coded illustration.
+
+## UML diagrams
+
+SVG diagrams of the programs live in [`docs/uml/`](../docs/uml/) (so they are also
+served by GitHub Pages at `/uml/`):
+
+| Diagram | Shows |
+|---|---|
+| [`01-system-components.svg`](../docs/uml/01-system-components.svg) | Component view: CMS, the build, packages, payload, workflow and the three front ends |
+| [`02-etl-class-diagram.svg`](../docs/uml/02-etl-class-diagram.svg) | Classes in `src.etl` and their relationships |
+| [`03-analysis-modules-package-diagram.svg`](../docs/uml/03-analysis-modules-package-diagram.svg) | `src.modules` packages, internal imports, and which programs import them |
+| [`04-build-site-sequence.svg`](../docs/uml/04-build-site-sequence.svg) | One manual `python -m src.build_site` run, including fallbacks and failure paths |
+| [`05-dashboards-class-diagram.svg`](../docs/uml/05-dashboards-class-diagram.svg) | `docs/app.js`, `streamlit_dashboard/app.py` and `src/app.py`, grouped by role, and their data sources |
+
+They are drawn by a small dependency-free generator in [`uml/`](uml/) (`umlkit.py` plus
+one `dN_*.py` file per diagram). Layout and member lists are written by hand from the
+code, so update the matching file when a class, function or import changes, then run
+`python maintenance/uml/build_uml.py` (add `--png` for local previews via Edge/Chrome).
