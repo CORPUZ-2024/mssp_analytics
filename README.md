@@ -68,6 +68,14 @@ thresholds — is kept in [`maintenance/`](maintenance/), the folder for operati
 design notes that sit outside this README. See
 [`maintenance/architecture.md`](maintenance/architecture.md).
 
+**UML diagrams** (SVG, in [`docs/uml/`](docs/uml/)):
+[system components](docs/uml/01-system-components.svg) &middot;
+[`src.etl` classes](docs/uml/02-etl-class-diagram.svg) &middot;
+[`src.modules` packages](docs/uml/03-analysis-modules-package-diagram.svg) &middot;
+[`build_site` sequence](docs/uml/04-build-site-sequence.svg) &middot;
+[dashboard programs](docs/uml/05-dashboards-class-diagram.svg).
+Regenerate them with `python maintenance/uml/build_uml.py`.
+
 ---
 
 ## Repository layout
@@ -87,7 +95,7 @@ design notes that sit outside this README. See
 | `run.bat` | Windows launcher for the Streamlit dashboard |
 | `src/app.py` | the original live-API Streamlit app, kept as a local exploration tool |
 | `src/cli.py` | standalone ETL CLI (`ingest`) for local CSV work |
-| `maintenance/` | operational and design notes (see [`maintenance/architecture.md`](maintenance/architecture.md)) |
+| `maintenance/` | operational and design notes (see [`maintenance/architecture.md`](maintenance/architecture.md)); `maintenance/uml/` holds the generator for the UML diagrams in `docs/uml/` |
 | `.github/workflows/` | `pages.yml` (deploy only; there is no data-refresh workflow) |
 
 The committed payload carries provenance — build timestamp, catalog source, and the
